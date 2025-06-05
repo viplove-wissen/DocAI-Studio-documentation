@@ -1,0 +1,19 @@
+wissenai.observability.modules package
+======================================
+
+Subpackages
+-----------
+
+.. toctree::
+   :maxdepth: 4
+
+   wissenai.observability.modules.open_telemetry_fast
+   wissenai.observability.modules.open_telemetry_flask
+
+Module contents
+---------------
+
+.. automodule:: wissenai.observability.modules
+   :members:
+   :undoc-members:
+   :show-inheritance:

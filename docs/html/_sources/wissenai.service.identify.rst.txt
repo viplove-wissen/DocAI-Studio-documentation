@@ -1,0 +1,21 @@
+wissenai.service.identify package
+=================================
+
+Submodules
+----------
+
+wissenai.service.identify.layout\_app module
+--------------------------------------------
+
+.. automodule:: wissenai.service.identify.layout_app
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Module contents
+---------------
+
+.. automodule:: wissenai.service.identify
+   :members:
+   :undoc-members:
+   :show-inheritance:

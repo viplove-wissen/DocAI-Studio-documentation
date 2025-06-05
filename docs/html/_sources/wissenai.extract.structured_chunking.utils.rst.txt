@@ -1,0 +1,21 @@
+wissenai.extract.structured\_chunking.utils package
+===================================================
+
+Submodules
+----------
+
+wissenai.extract.structured\_chunking.utils.utils\_code module
+--------------------------------------------------------------
+
+.. automodule:: wissenai.extract.structured_chunking.utils.utils_code
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Module contents
+---------------
+
+.. automodule:: wissenai.extract.structured_chunking.utils
+   :members:
+   :undoc-members:
+   :show-inheritance:

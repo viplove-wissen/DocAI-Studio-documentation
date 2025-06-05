@@ -1,0 +1,20 @@
+wissenai.service package
+========================
+
+Subpackages
+-----------
+
+.. toctree::
+   :maxdepth: 4
+
+   wissenai.service.docvqa
+   wissenai.service.identify
+   wissenai.service.preprocess
+
+Module contents
+---------------
+
+.. automodule:: wissenai.service
+   :members:
+   :undoc-members:
+   :show-inheritance:

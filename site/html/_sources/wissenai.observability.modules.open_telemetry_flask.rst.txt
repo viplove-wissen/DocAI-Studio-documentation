@@ -1,0 +1,53 @@
+wissenai.observability.modules.open\_telemetry\_flask package
+=============================================================
+
+Submodules
+----------
+
+wissenai.observability.modules.open\_telemetry\_flask.config module
+-------------------------------------------------------------------
+
+.. automodule:: wissenai.observability.modules.open_telemetry_flask.config
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+wissenai.observability.modules.open\_telemetry\_flask.logger module
+-------------------------------------------------------------------
+
+.. automodule:: wissenai.observability.modules.open_telemetry_flask.logger
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+wissenai.observability.modules.open\_telemetry\_flask.metrics module
+--------------------------------------------------------------------
+
+.. automodule:: wissenai.observability.modules.open_telemetry_flask.metrics
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+wissenai.observability.modules.open\_telemetry\_flask.metrics\_util module
+--------------------------------------------------------------------------
+
+.. automodule:: wissenai.observability.modules.open_telemetry_flask.metrics_util
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+wissenai.observability.modules.open\_telemetry\_flask.tracing module
+--------------------------------------------------------------------
+
+.. automodule:: wissenai.observability.modules.open_telemetry_flask.tracing
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Module contents
+---------------
+
+.. automodule:: wissenai.observability.modules.open_telemetry_flask
+   :members:
+   :undoc-members:
+   :show-inheritance:

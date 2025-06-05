@@ -1,0 +1,289 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>wissenai.eval package &mdash; Doc AI Studio 1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=29a6c3e3"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="wissenai.extract package" href="wissenai.extract.html" />
+    <link rel="prev" title="wissenai package" href="wissenai.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            Doc AI Studio
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">wissenai</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="wissenai.html">wissenai package</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="wissenai.html#subpackages">Subpackages</a><ul class="current">
+<li class="toctree-l4 current"><a class="current reference internal" href="#">wissenai.eval package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="wissenai.extract.html">wissenai.extract package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="wissenai.identify.html">wissenai.identify package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="wissenai.observability.html">wissenai.observability package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="wissenai.postprocess.html">wissenai.postprocess package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="wissenai.preprocess.html">wissenai.preprocess package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="wissenai.service.html">wissenai.service package</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="wissenai.html#module-wissenai">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">Doc AI Studio</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="modules.html">wissenai</a></li>
+          <li class="breadcrumb-item"><a href="wissenai.html">wissenai package</a></li>
+      <li class="breadcrumb-item active">wissenai.eval package</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/wissenai.eval.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="wissenai-eval-package">
+<h1>wissenai.eval package<a class="headerlink" href="#wissenai-eval-package" title="Link to this heading"></a></h1>
+<section id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Link to this heading"></a></h2>
+</section>
+<section id="module-wissenai.eval.llm_eval">
+<span id="wissenai-eval-llm-eval-module"></span><h2>wissenai.eval.llm_eval module<a class="headerlink" href="#module-wissenai.eval.llm_eval" title="Link to this heading"></a></h2>
+<p>Package that provides helper functions to evaluate LLM applications. It covers metrics from several frameworks 
+such as RAGAS, Deepeval, Bert Score, BLEU and ROGUE score from evaluate module</p>
+<dl class="py function">
+<dt class="sig sig-object py" id="wissenai.eval.llm_eval.eval_llm_summary_auto">
+<span class="sig-prename descclassname"><span class="pre">wissenai.eval.llm_eval.</span></span><span class="sig-name descname"><span class="pre">eval_llm_summary_auto</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">llm_output</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span></span></span><a class="reference internal" href="_modules/wissenai/eval/llm_eval.html#eval_llm_summary_auto"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#wissenai.eval.llm_eval.eval_llm_summary_auto" title="Link to this definition"></a></dt>
+<dd><p>Deep eval metric that evaluates the quality of text summarization performed by LLM</p>
+<dl class="simple">
+<dt>Args:</dt><dd><p>input (str): Actual text to be summarized
+output (str): Summarized output from LLM</p>
+</dd>
+<dt>Returns:</dt><dd><p>float: Summarization score</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="wissenai.eval.llm_eval.eval_llm_summary_byembed">
+<span class="sig-prename descclassname"><span class="pre">wissenai.eval.llm_eval.</span></span><span class="sig-name descname"><span class="pre">eval_llm_summary_byembed</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">reference</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">candidate</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/wissenai/eval/llm_eval.html#eval_llm_summary_byembed"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#wissenai.eval.llm_eval.eval_llm_summary_byembed" title="Link to this definition"></a></dt>
+<dd><p>Evaluate the quality of a candidate sentence (model-generated) against a reference sentence (human-provided) 
+BERTScore, a metric that uses embeddings to assess semantic similarity.</p>
+<p>BERTScore calculates precision, recall, and F1 score by comparing embeddings of the candidate and reference sentences.
+It is better than n-gram based metrics 
+Args:</p>
+<blockquote>
+<div><p>reference (str): The human-provided reference sentence (ground truth).
+candidate (str): The model-generated candidate sentence to be evaluated.</p>
+</div></blockquote>
+<dl>
+<dt>Returns:</dt><dd><p>Dict[str, float]: A dictionary containing the BERTScore values for Precision, Recall, and F1.</p>
+<p>Example return value:
+{</p>
+<blockquote>
+<div><p>“Precision”: 0.8234,
+“Recall”: 0.8123,
+“F1”: 0.8178</p>
+</div></blockquote>
+<p>}</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="wissenai.eval.llm_eval.eval_llm_summary_byword">
+<span class="sig-prename descclassname"><span class="pre">wissenai.eval.llm_eval.</span></span><span class="sig-name descname"><span class="pre">eval_llm_summary_byword</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">predictions</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">references</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/wissenai/eval/llm_eval.html#eval_llm_summary_byword"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#wissenai.eval.llm_eval.eval_llm_summary_byword" title="Link to this definition"></a></dt>
+<dd><p>Evaluation can be done on RAG outputs or LLM summarization outputs using the two scores BLEU and ROUGE.
+These metrics use an algorithm that finds a score which is the word by word difference 
+between the reference (ground truth) and the LLM output.
+BLEU score: measures the similarity between the machine-translated text and the reference translations using n-grams
+ROUGE score measures the similarity between the machine-generated summary and the reference summaries using 
+overlapping n-grams,word sequences that appear in both the machine-generated summary and the reference summaries
+Args:</p>
+<blockquote>
+<div><p>predictions (List[str]):  list of predicted sentences
+references (List[str]): list of lists of reference sentences (since each predicted sentence can
+have multiple references), reference sentences refer to ground truth</p>
+</div></blockquote>
+<p>Returns:
+Tuple[Dict[str, float], Dict[str, float]]: Two dictionaries containing the BLEU and ROUGE scores, respectively.
+Example output format :
+{‘bleu’: 1.0, ‘precisions’: [1.0, 1.0, 1.0, 1.0], ‘brevity_penalty’: 1.0, ‘length_ratio’: 1.1666666666666667, ‘translation_length’: 7, ‘reference_length’: 6}
+{‘rouge1’: 1.0, ‘rouge2’: 1.0, ‘rougeL’: 1.0, ‘rougeLsum’: 1.0}</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="wissenai.eval.llm_eval.eval_rag_auto">
+<span class="sig-prename descclassname"><span class="pre">wissenai.eval.llm_eval.</span></span><span class="sig-name descname"><span class="pre">eval_rag_auto</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">query</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">answer</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">contexts</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/wissenai/eval/llm_eval.html#eval_rag_auto"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#wissenai.eval.llm_eval.eval_rag_auto" title="Link to this definition"></a></dt>
+<dd><p>Evaluate RAG application for two RAGAS metrics that DOES NOT require Ground Truth to be provided.
+These metrics are mathematical and use LLM to make computations by reprompting LLM for specific data.
+Faithfulness: This measures the factual consistency of the generated answer against the given context
+Answer Relevancy: focuses on assessing how pertinent the generated answer is to the given prompt</p>
+<dl class="simple">
+<dt>Args:</dt><dd><p>query (str): Query from user
+answer (str): Final output from the RAG pipeline from the LLM
+contexts (List[List[str]]): top N contexts retrieved from the vector database by retriever</p>
+</dd>
+<dt>Returns:</dt><dd><dl class="simple">
+<dt>Tuple[float, float]: A tuple containing two float values:</dt><dd><ul class="simple">
+<li><p>The faithfulness score (float).</p></li>
+<li><p>The answer relevancy score (float).</p></li>
+</ul>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="wissenai.eval.llm_eval.eval_rag_bulk">
+<span class="sig-prename descclassname"><span class="pre">wissenai.eval.llm_eval.</span></span><span class="sig-name descname"><span class="pre">eval_rag_bulk</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">questions</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">answers</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">contexts</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ground_truths</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/wissenai/eval/llm_eval.html#eval_rag_bulk"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#wissenai.eval.llm_eval.eval_rag_bulk" title="Link to this definition"></a></dt>
+<dd><p>Evaluate RAG applications in bulk for two RAGAS metrics that require Ground Truth.
+These metrics are mathematical and use LLM to make computations by reprompting LLM for specific data.
+Includes all of the 4 RAGAS metrics defined in eval_rag_auto and eval_rag_groundtruth</p>
+<dl class="simple">
+<dt>Args:</dt><dd><p>questions (List[str]): List of queries from the user.
+answers (List[str]): List of final outputs from the RAG pipeline from the LLM.
+contexts (List[List[List[str]]]): List of top N contexts retrieved from the vector database by retriever, for each question.
+ground_truths (List[str]): List of actual ground truth answers for the given questions.</p>
+</dd>
+<dt>Returns:</dt><dd><p>Pandas Dataframe containing, questions, answers and corresponding eval scores</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="wissenai.eval.llm_eval.eval_rag_groundtruth">
+<span class="sig-prename descclassname"><span class="pre">wissenai.eval.llm_eval.</span></span><span class="sig-name descname"><span class="pre">eval_rag_groundtruth</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">query</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">answer</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">contexts</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ground_truth</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/wissenai/eval/llm_eval.html#eval_rag_groundtruth"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#wissenai.eval.llm_eval.eval_rag_groundtruth" title="Link to this definition"></a></dt>
+<dd><p>Evaluate RAG applications for two RAGAS metrics that require Ground Truth to be provided.
+These metrics are mathematical and use LLM to make computations by reprompting LLM for specific data.
+Context Precision: metric that evaluates whether all of the ground-truth relevant items present in the contexts are ranked higher or not. 
+Ideally all the relevant chunks must appear at the top ranks.
+Context recall: measures the extent to which the retrieved context aligns with the annotated answer, 
+treated as the ground truth</p>
+<dl class="simple">
+<dt>Args:</dt><dd><p>query (str): Query from user
+answer (str): Final output from the RAG pipeline from the LLM
+contexts (List[List[str]]): top N contexts retrieved from the vector database by retriever
+ground_truth (str): Actual answer to the given question from user</p>
+</dd>
+<dt>Returns:</dt><dd><dl class="simple">
+<dt>Tuple[float, float]: A tuple containing two float values:</dt><dd><ul class="simple">
+<li><p>The context_precision score (float).</p></li>
+<li><p>The  context_recall score (float).</p></li>
+</ul>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="wissenai.eval.llm_eval.eval_rag_risks_auto">
+<span class="sig-prename descclassname"><span class="pre">wissenai.eval.llm_eval.</span></span><span class="sig-name descname"><span class="pre">eval_rag_risks_auto</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">query</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">answer</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">contexts</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/wissenai/eval/llm_eval.html#eval_rag_risks_auto"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#wissenai.eval.llm_eval.eval_rag_risks_auto" title="Link to this definition"></a></dt>
+<dd><p>Evaluate RAG application or LLM outputs in general against 3 DeepEval metrics that Does NOT require
+ground truth to be provided. These metrics are mathematical and use LLM to make computations by
+reprompting LLM for specific data.
+Hallucination: A metric determines whether your LLM generates factually correct information by comparing the actual_output to the provided context
+Bias: A metric determines whether your LLM output contains gender, racial, or political bias
+Toxicity: A metric that evaluates toxicness in your LLM outputs such as Personal attacks, mockery, Hate, Dismissive statements
+Args:</p>
+<blockquote>
+<div><p>query (str): Query from user
+answer (str): Final output from the RAG pipeline from the LLM
+contexts (List[str]): top N contexts retrieved from the vector database by retriever</p>
+</div></blockquote>
+<dl class="simple">
+<dt>Returns:</dt><dd><p>Tuple[float, float,float]: A tuple containing three float values:
+-Hallucination score
+-Bias score
+-Toxicity score</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="module-wissenai.eval">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-wissenai.eval" title="Link to this heading"></a></h2>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="wissenai.html" class="btn btn-neutral float-left" title="wissenai package" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="wissenai.extract.html" class="btn btn-neutral float-right" title="wissenai.extract package" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Wissen.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

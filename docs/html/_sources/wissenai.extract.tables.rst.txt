@@ -1,0 +1,29 @@
+wissenai.extract.tables package
+===============================
+
+Submodules
+----------
+
+wissenai.extract.tables.tatr\_tsd module
+----------------------------------------
+
+.. automodule:: wissenai.extract.tables.tatr_tsd
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+wissenai.extract.tables.tatr\_tsr module
+----------------------------------------
+
+.. automodule:: wissenai.extract.tables.tatr_tsr
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Module contents
+---------------
+
+.. automodule:: wissenai.extract.tables
+   :members:
+   :undoc-members:
+   :show-inheritance:

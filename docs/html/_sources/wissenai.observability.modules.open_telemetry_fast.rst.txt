@@ -1,0 +1,53 @@
+wissenai.observability.modules.open\_telemetry\_fast package
+============================================================
+
+Submodules
+----------
+
+wissenai.observability.modules.open\_telemetry\_fast.config module
+------------------------------------------------------------------
+
+.. automodule:: wissenai.observability.modules.open_telemetry_fast.config
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+wissenai.observability.modules.open\_telemetry\_fast.logger module
+------------------------------------------------------------------
+
+.. automodule:: wissenai.observability.modules.open_telemetry_fast.logger
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+wissenai.observability.modules.open\_telemetry\_fast.metrics module
+-------------------------------------------------------------------
+
+.. automodule:: wissenai.observability.modules.open_telemetry_fast.metrics
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+wissenai.observability.modules.open\_telemetry\_fast.metrics\_util module
+-------------------------------------------------------------------------
+
+.. automodule:: wissenai.observability.modules.open_telemetry_fast.metrics_util
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+wissenai.observability.modules.open\_telemetry\_fast.tracing module
+-------------------------------------------------------------------
+
+.. automodule:: wissenai.observability.modules.open_telemetry_fast.tracing
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Module contents
+---------------
+
+.. automodule:: wissenai.observability.modules.open_telemetry_fast
+   :members:
+   :undoc-members:
+   :show-inheritance:

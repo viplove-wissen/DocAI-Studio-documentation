@@ -1,0 +1,371 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>wissenai.service.docvqa.db_mongo &mdash; Doc AI Studio 1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../../_static/documentation_options.js?v=29a6c3e3"></script>
+      <script src="../../../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../index.html" class="icon icon-home">
+            Doc AI Studio
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../modules.html">wissenai</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../index.html">Doc AI Studio</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">wissenai.service.docvqa.db_mongo</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for wissenai.service.docvqa.db_mongo</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">pymongo</span> <span class="kn">import</span> <span class="n">MongoClient</span>
+<span class="kn">import</span> <span class="nn">json</span>
+
+
+<div class="viewcode-block" id="get_db">
+<a class="viewcode-back" href="../../../../wissenai.service.docvqa.html#wissenai.service.docvqa.db_mongo.get_db">[docs]</a>
+<span class="k">def</span> <span class="nf">get_db</span><span class="p">(</span><span class="n">db_uri</span><span class="p">):</span>
+    <span class="n">client</span> <span class="o">=</span> <span class="n">MongoClient</span><span class="p">(</span><span class="n">db_uri</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">client</span><span class="p">[</span><span class="s2">&quot;dde-service-db&quot;</span><span class="p">]</span></div>
+
+
+
+<div class="viewcode-block" id="get_all_training_sessions">
+<a class="viewcode-back" href="../../../../wissenai.service.docvqa.html#wissenai.service.docvqa.db_mongo.get_all_training_sessions">[docs]</a>
+<span class="k">def</span> <span class="nf">get_all_training_sessions</span><span class="p">(</span><span class="n">db</span><span class="p">):</span>
+    <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="n">db</span><span class="o">.</span><span class="n">trainingSessionEntity</span><span class="o">.</span><span class="n">aggregate</span><span class="p">([</span>
+        <span class="p">{</span><span class="s2">&quot;$unwind&quot;</span><span class="p">:</span> <span class="s2">&quot;$_id&quot;</span><span class="p">},</span>
+        <span class="p">{</span><span class="s2">&quot;$group&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;_id&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span> <span class="s2">&quot;_id&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;$addToSet&quot;</span><span class="p">:</span> <span class="s2">&quot;$_id&quot;</span><span class="p">}}}</span>
+    <span class="p">]))[</span><span class="mi">0</span><span class="p">][</span><span class="s2">&quot;_id&quot;</span><span class="p">]</span></div>
+
+
+
+<div class="viewcode-block" id="update_training_session_status">
+<a class="viewcode-back" href="../../../../wissenai.service.docvqa.html#wissenai.service.docvqa.db_mongo.update_training_session_status">[docs]</a>
+<span class="k">def</span> <span class="nf">update_training_session_status</span><span class="p">(</span><span class="n">db</span><span class="p">,</span> <span class="n">session_id</span><span class="p">,</span> <span class="n">status</span><span class="p">):</span>
+    <span class="n">response</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">trainingSessionEntity</span><span class="o">.</span><span class="n">update_one</span><span class="p">(</span>
+        <span class="p">{</span><span class="s2">&quot;_id&quot;</span><span class="p">:</span> <span class="n">session_id</span><span class="p">},</span>
+        <span class="p">{</span><span class="s2">&quot;$set&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;status&quot;</span><span class="p">:</span> <span class="n">status</span><span class="p">}}</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="n">response</span></div>
+
+
+
+<div class="viewcode-block" id="update_training_progress">
+<a class="viewcode-back" href="../../../../wissenai.service.docvqa.html#wissenai.service.docvqa.db_mongo.update_training_progress">[docs]</a>
+<span class="k">def</span> <span class="nf">update_training_progress</span><span class="p">(</span><span class="n">db</span><span class="p">,</span> <span class="n">session_id</span><span class="p">,</span> <span class="n">progress</span><span class="p">):</span>
+    <span class="n">response</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">trainingSessionEntity</span><span class="o">.</span><span class="n">update_one</span><span class="p">(</span>
+        <span class="p">{</span><span class="s2">&quot;_id&quot;</span><span class="p">:</span> <span class="n">session_id</span><span class="p">},</span>
+        <span class="p">{</span><span class="s2">&quot;$set&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;progress&quot;</span><span class="p">:</span> <span class="n">progress</span><span class="p">}}</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="n">response</span></div>
+
+
+
+<div class="viewcode-block" id="update_training_session">
+<a class="viewcode-back" href="../../../../wissenai.service.docvqa.html#wissenai.service.docvqa.db_mongo.update_training_session">[docs]</a>
+<span class="k">def</span> <span class="nf">update_training_session</span><span class="p">(</span><span class="n">db</span><span class="p">,</span> <span class="n">session_id</span><span class="p">,</span> <span class="n">progress</span><span class="p">,</span> <span class="n">status</span><span class="p">):</span>
+    <span class="n">response</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">trainingSessionEntity</span><span class="o">.</span><span class="n">update_one</span><span class="p">(</span>
+        <span class="p">{</span><span class="s2">&quot;_id&quot;</span><span class="p">:</span> <span class="n">session_id</span><span class="p">},</span>
+        <span class="p">{</span><span class="s2">&quot;$set&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;progress&quot;</span><span class="p">:</span> <span class="n">progress</span><span class="p">,</span> <span class="s2">&quot;status&quot;</span><span class="p">:</span> <span class="n">status</span><span class="p">}},</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="n">response</span></div>
+
+
+
+<div class="viewcode-block" id="get_session_status">
+<a class="viewcode-back" href="../../../../wissenai.service.docvqa.html#wissenai.service.docvqa.db_mongo.get_session_status">[docs]</a>
+<span class="k">def</span> <span class="nf">get_session_status</span><span class="p">(</span><span class="n">db</span><span class="p">,</span> <span class="n">session_id</span><span class="p">):</span>
+    <span class="n">response</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">db</span><span class="o">.</span><span class="n">trainingSessionEntity</span><span class="o">.</span><span class="n">find</span><span class="p">({</span><span class="s2">&quot;_id&quot;</span><span class="p">:</span> <span class="n">session_id</span><span class="p">},</span> <span class="p">{</span><span class="s1">&#39;status&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;_id&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">}))</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">response</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">response</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s1">&#39;status&#39;</span><span class="p">]</span></div>
+
+
+
+<div class="viewcode-block" id="delete_training_session">
+<a class="viewcode-back" href="../../../../wissenai.service.docvqa.html#wissenai.service.docvqa.db_mongo.delete_training_session">[docs]</a>
+<span class="k">def</span> <span class="nf">delete_training_session</span><span class="p">(</span><span class="n">db</span><span class="p">,</span> <span class="n">session_id</span><span class="p">):</span>
+    <span class="n">response</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">trainingSessionEntity</span><span class="o">.</span><span class="n">delete_one</span><span class="p">({</span><span class="s2">&quot;_id&quot;</span><span class="p">:</span> <span class="n">session_id</span><span class="p">})</span>
+    <span class="k">return</span> <span class="n">response</span></div>
+
+
+
+<div class="viewcode-block" id="update_model">
+<a class="viewcode-back" href="../../../../wissenai.service.docvqa.html#wissenai.service.docvqa.db_mongo.update_model">[docs]</a>
+<span class="k">def</span> <span class="nf">update_model</span><span class="p">(</span><span class="n">db</span><span class="p">,</span> <span class="n">session_id</span><span class="p">,</span> <span class="n">model</span><span class="p">):</span>
+    <span class="n">response</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">trainingSessionEntity</span><span class="o">.</span><span class="n">update_one</span><span class="p">(</span>
+        <span class="p">{</span><span class="s2">&quot;_id&quot;</span><span class="p">:</span> <span class="n">session_id</span><span class="p">},</span>
+        <span class="p">{</span><span class="s2">&quot;$set&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;data&quot;</span><span class="p">:</span> <span class="n">model</span><span class="p">}})</span>
+    <span class="k">return</span> <span class="n">response</span></div>
+
+
+
+<div class="viewcode-block" id="get_progress_of_training_session">
+<a class="viewcode-back" href="../../../../wissenai.service.docvqa.html#wissenai.service.docvqa.db_mongo.get_progress_of_training_session">[docs]</a>
+<span class="k">def</span> <span class="nf">get_progress_of_training_session</span><span class="p">(</span><span class="n">db</span><span class="p">,</span> <span class="n">session_id</span><span class="p">):</span>
+    <span class="n">cursor</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">trainingSessionEntity</span><span class="o">.</span><span class="n">find</span><span class="p">({</span><span class="s2">&quot;_id&quot;</span><span class="p">:</span> <span class="n">session_id</span><span class="p">},</span> <span class="p">{</span><span class="s2">&quot;progress&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;_id&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">})</span>
+    <span class="k">for</span> <span class="n">field</span> <span class="ow">in</span> <span class="n">cursor</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;progress&quot;</span><span class="p">:</span> <span class="n">field</span><span class="p">[</span><span class="s1">&#39;progress&#39;</span><span class="p">]}</span></div>
+
+
+
+<div class="viewcode-block" id="get_model_for_training_session">
+<a class="viewcode-back" href="../../../../wissenai.service.docvqa.html#wissenai.service.docvqa.db_mongo.get_model_for_training_session">[docs]</a>
+<span class="k">def</span> <span class="nf">get_model_for_training_session</span><span class="p">(</span><span class="n">db</span><span class="p">,</span> <span class="n">session_id</span><span class="p">):</span>
+    <span class="n">cursor</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">trainingSessionEntity</span><span class="o">.</span><span class="n">find</span><span class="p">({</span><span class="s2">&quot;_id&quot;</span><span class="p">:</span> <span class="n">session_id</span><span class="p">},</span> <span class="p">{</span><span class="s2">&quot;data&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;_id&quot;</span><span class="p">:</span><span class="mi">0</span><span class="p">})</span>
+    <span class="k">for</span> <span class="n">field</span> <span class="ow">in</span> <span class="n">cursor</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">field</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">]</span></div>
+
+
+
+<div class="viewcode-block" id="add_extraction_session">
+<a class="viewcode-back" href="../../../../wissenai.service.docvqa.html#wissenai.service.docvqa.db_mongo.add_extraction_session">[docs]</a>
+<span class="k">def</span> <span class="nf">add_extraction_session</span><span class="p">(</span><span class="n">db</span><span class="p">,</span> <span class="n">session_id</span><span class="p">,</span> <span class="n">template_id</span><span class="p">,</span> <span class="n">status</span><span class="p">,</span> <span class="n">progress</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
+    <span class="n">comment_doc</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;_id&quot;</span><span class="p">:</span> <span class="n">session_id</span><span class="p">,</span>
+        <span class="s2">&quot;template_id&quot;</span><span class="p">:</span> <span class="n">template_id</span><span class="p">,</span>
+        <span class="s2">&quot;status&quot;</span><span class="p">:</span> <span class="n">status</span><span class="p">,</span>
+        <span class="s2">&quot;progress&quot;</span><span class="p">:</span> <span class="n">progress</span><span class="p">,</span>
+        <span class="s2">&quot;data&quot;</span><span class="p">:</span> <span class="n">data</span>
+    <span class="p">}</span>
+    <span class="k">return</span> <span class="n">db</span><span class="o">.</span><span class="n">extractionSessionEntity</span><span class="o">.</span><span class="n">insert_one</span><span class="p">(</span><span class="n">comment_doc</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="get_all_sessions">
+<a class="viewcode-back" href="../../../../wissenai.service.docvqa.html#wissenai.service.docvqa.db_mongo.get_all_sessions">[docs]</a>
+<span class="k">def</span> <span class="nf">get_all_sessions</span><span class="p">(</span><span class="n">db</span><span class="p">):</span>
+    <span class="n">sessions</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">db</span><span class="o">.</span><span class="n">sessions</span><span class="o">.</span><span class="n">find</span><span class="p">({},</span> <span class="p">{</span><span class="s2">&quot;_id&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;_id&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">}))</span>
+    <span class="n">session_id_list</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">session</span> <span class="ow">in</span> <span class="n">sessions</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">session</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">session_id_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">session</span><span class="p">[</span><span class="s2">&quot;_id&quot;</span><span class="p">])</span>
+    <span class="k">return</span> <span class="n">sessions</span></div>
+
+
+
+<div class="viewcode-block" id="update_session_status">
+<a class="viewcode-back" href="../../../../wissenai.service.docvqa.html#wissenai.service.docvqa.db_mongo.update_session_status">[docs]</a>
+<span class="k">def</span> <span class="nf">update_session_status</span><span class="p">(</span><span class="n">db</span><span class="p">,</span> <span class="n">session_id</span><span class="p">,</span> <span class="n">status</span><span class="p">):</span>
+    <span class="n">response</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">trainingSessionEntity</span><span class="o">.</span><span class="n">update_one</span><span class="p">(</span>
+        <span class="p">{</span><span class="s2">&quot;_id&quot;</span><span class="p">:</span> <span class="n">session_id</span><span class="p">},</span>
+        <span class="p">{</span><span class="s2">&quot;$set&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;status&quot;</span><span class="p">:</span> <span class="n">status</span><span class="p">}}</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="n">response</span></div>
+
+
+
+<div class="viewcode-block" id="get_all_extraction_sessions">
+<a class="viewcode-back" href="../../../../wissenai.service.docvqa.html#wissenai.service.docvqa.db_mongo.get_all_extraction_sessions">[docs]</a>
+<span class="k">def</span> <span class="nf">get_all_extraction_sessions</span><span class="p">(</span><span class="n">db</span><span class="p">):</span>
+    <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="n">db</span><span class="o">.</span><span class="n">extractionSessionEntity</span><span class="o">.</span><span class="n">aggregate</span><span class="p">([</span>
+        <span class="p">{</span><span class="s2">&quot;$unwind&quot;</span><span class="p">:</span> <span class="s2">&quot;$_id&quot;</span><span class="p">},</span>
+        <span class="p">{</span><span class="s2">&quot;$group&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;_id&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span> <span class="s2">&quot;_id&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;$addToSet&quot;</span><span class="p">:</span> <span class="s2">&quot;$_id&quot;</span><span class="p">}}}</span>
+    <span class="p">]))[</span><span class="mi">0</span><span class="p">][</span><span class="s2">&quot;_id&quot;</span><span class="p">]</span></div>
+
+
+
+<div class="viewcode-block" id="update_extraction_session_status">
+<a class="viewcode-back" href="../../../../wissenai.service.docvqa.html#wissenai.service.docvqa.db_mongo.update_extraction_session_status">[docs]</a>
+<span class="k">def</span> <span class="nf">update_extraction_session_status</span><span class="p">(</span><span class="n">db</span><span class="p">,</span> <span class="n">session_id</span><span class="p">,</span> <span class="n">status</span><span class="p">):</span>
+    <span class="n">response</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">extractionSessionEntity</span><span class="o">.</span><span class="n">update_one</span><span class="p">(</span>
+        <span class="p">{</span><span class="s2">&quot;_id&quot;</span><span class="p">:</span> <span class="n">session_id</span><span class="p">},</span>
+        <span class="p">{</span><span class="s2">&quot;$set&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;status&quot;</span><span class="p">:</span> <span class="n">status</span><span class="p">}}</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="n">response</span></div>
+
+
+
+<div class="viewcode-block" id="update_progress">
+<a class="viewcode-back" href="../../../../wissenai.service.docvqa.html#wissenai.service.docvqa.db_mongo.update_progress">[docs]</a>
+<span class="k">def</span> <span class="nf">update_progress</span><span class="p">(</span><span class="n">db</span><span class="p">,</span> <span class="n">session_id</span><span class="p">,</span> <span class="n">progress</span><span class="p">):</span>
+    <span class="n">response</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">trainingSessionEntity</span><span class="o">.</span><span class="n">update_one</span><span class="p">(</span>
+        <span class="p">{</span><span class="s2">&quot;_id&quot;</span><span class="p">:</span> <span class="n">session_id</span><span class="p">},</span>
+        <span class="p">{</span><span class="s2">&quot;$set&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;progress&quot;</span><span class="p">:</span> <span class="n">progress</span><span class="p">}})</span></div>
+
+
+
+<div class="viewcode-block" id="update_extraction_progress">
+<a class="viewcode-back" href="../../../../wissenai.service.docvqa.html#wissenai.service.docvqa.db_mongo.update_extraction_progress">[docs]</a>
+<span class="k">def</span> <span class="nf">update_extraction_progress</span><span class="p">(</span><span class="n">db</span><span class="p">,</span> <span class="n">session_id</span><span class="p">,</span> <span class="n">progress</span><span class="p">):</span>
+    <span class="n">response</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">extractionSessionEntity</span><span class="o">.</span><span class="n">update_one</span><span class="p">(</span>
+        <span class="p">{</span><span class="s2">&quot;_id&quot;</span><span class="p">:</span> <span class="n">session_id</span><span class="p">},</span>
+        <span class="p">{</span><span class="s2">&quot;$set&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;progress&quot;</span><span class="p">:</span> <span class="n">progress</span><span class="p">}}</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="n">response</span></div>
+
+
+
+<div class="viewcode-block" id="update_session">
+<a class="viewcode-back" href="../../../../wissenai.service.docvqa.html#wissenai.service.docvqa.db_mongo.update_session">[docs]</a>
+<span class="k">def</span> <span class="nf">update_session</span><span class="p">(</span><span class="n">db</span><span class="p">,</span> <span class="n">session_id</span><span class="p">,</span> <span class="n">progress</span><span class="p">,</span> <span class="n">status</span><span class="p">):</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">session_id</span><span class="p">,</span> <span class="n">progress</span><span class="p">,</span> <span class="n">status</span><span class="p">)</span>
+    <span class="n">response</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">trainingSessionEntity</span><span class="o">.</span><span class="n">update_one</span><span class="p">(</span>
+        <span class="p">{</span><span class="s2">&quot;_id&quot;</span><span class="p">:</span> <span class="n">session_id</span><span class="p">},</span>
+        <span class="p">{</span><span class="s2">&quot;$set&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;progress&quot;</span><span class="p">:</span> <span class="n">progress</span><span class="p">,</span> <span class="s2">&quot;status&quot;</span><span class="p">:</span> <span class="n">status</span><span class="p">}}</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="n">response</span></div>
+
+
+
+<div class="viewcode-block" id="update_extraction_session">
+<a class="viewcode-back" href="../../../../wissenai.service.docvqa.html#wissenai.service.docvqa.db_mongo.update_extraction_session">[docs]</a>
+<span class="k">def</span> <span class="nf">update_extraction_session</span><span class="p">(</span><span class="n">db</span><span class="p">,</span> <span class="n">session_id</span><span class="p">,</span> <span class="n">progress</span><span class="p">,</span> <span class="n">status</span><span class="p">):</span>
+    <span class="n">response</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">extractionSessionEntity</span><span class="o">.</span><span class="n">update_one</span><span class="p">(</span>
+        <span class="p">{</span><span class="s2">&quot;_id&quot;</span><span class="p">:</span> <span class="n">session_id</span><span class="p">},</span>
+        <span class="p">{</span><span class="s2">&quot;$set&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;progress&quot;</span><span class="p">:</span> <span class="n">progress</span><span class="p">,</span> <span class="s2">&quot;status&quot;</span><span class="p">:</span> <span class="n">status</span><span class="p">}},</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="n">response</span></div>
+
+
+
+<div class="viewcode-block" id="delete_session">
+<a class="viewcode-back" href="../../../../wissenai.service.docvqa.html#wissenai.service.docvqa.db_mongo.delete_session">[docs]</a>
+<span class="k">def</span> <span class="nf">delete_session</span><span class="p">(</span><span class="n">db</span><span class="p">,</span> <span class="n">session_id</span><span class="p">):</span>
+    <span class="n">response</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">sessions</span><span class="o">.</span><span class="n">delete_one</span><span class="p">({</span><span class="s2">&quot;_id&quot;</span><span class="p">:</span> <span class="n">session_id</span><span class="p">})</span>
+    <span class="k">return</span> <span class="n">response</span></div>
+
+
+
+<div class="viewcode-block" id="delete_extraction_session">
+<a class="viewcode-back" href="../../../../wissenai.service.docvqa.html#wissenai.service.docvqa.db_mongo.delete_extraction_session">[docs]</a>
+<span class="k">def</span> <span class="nf">delete_extraction_session</span><span class="p">(</span><span class="n">db</span><span class="p">,</span> <span class="n">session_id</span><span class="p">):</span>
+    <span class="n">response</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">extractionSessionEntity</span><span class="o">.</span><span class="n">delete_one</span><span class="p">({</span><span class="s2">&quot;_id&quot;</span><span class="p">:</span> <span class="n">session_id</span><span class="p">})</span>
+    <span class="k">return</span> <span class="n">response</span></div>
+
+
+
+<div class="viewcode-block" id="update_data">
+<a class="viewcode-back" href="../../../../wissenai.service.docvqa.html#wissenai.service.docvqa.db_mongo.update_data">[docs]</a>
+<span class="k">def</span> <span class="nf">update_data</span><span class="p">(</span><span class="n">db</span><span class="p">,</span> <span class="n">session_id</span><span class="p">,</span> <span class="n">data_url</span><span class="p">):</span>
+    <span class="n">response</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">extractionSessionEntity</span><span class="o">.</span><span class="n">update_one</span><span class="p">(</span>
+        <span class="p">{</span><span class="s2">&quot;_id&quot;</span><span class="p">:</span> <span class="n">session_id</span><span class="p">},</span>
+        <span class="p">{</span><span class="s2">&quot;$set&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;dataUrl&quot;</span><span class="p">:</span> <span class="n">data_url</span><span class="p">}})</span>
+    <span class="k">return</span> <span class="n">response</span></div>
+
+
+
+<div class="viewcode-block" id="get_progress_of_extraction_session">
+<a class="viewcode-back" href="../../../../wissenai.service.docvqa.html#wissenai.service.docvqa.db_mongo.get_progress_of_extraction_session">[docs]</a>
+<span class="k">def</span> <span class="nf">get_progress_of_extraction_session</span><span class="p">(</span><span class="n">db</span><span class="p">,</span> <span class="n">session_id</span><span class="p">):</span>
+    <span class="n">cursor</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">extractionSessionEntity</span><span class="o">.</span><span class="n">find</span><span class="p">({</span><span class="s2">&quot;_id&quot;</span><span class="p">:</span> <span class="n">session_id</span><span class="p">},</span> <span class="p">{</span><span class="s2">&quot;progress&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;_id&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">})</span>
+    <span class="k">for</span> <span class="n">field</span> <span class="ow">in</span> <span class="n">cursor</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">field</span><span class="p">[</span><span class="s1">&#39;progress&#39;</span><span class="p">]</span></div>
+
+
+
+<div class="viewcode-block" id="get_progress_of_session">
+<a class="viewcode-back" href="../../../../wissenai.service.docvqa.html#wissenai.service.docvqa.db_mongo.get_progress_of_session">[docs]</a>
+<span class="k">def</span> <span class="nf">get_progress_of_session</span><span class="p">(</span><span class="n">db</span><span class="p">,</span> <span class="n">session_id</span><span class="p">):</span>
+    <span class="n">cursor</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">sessions</span><span class="o">.</span><span class="n">find</span><span class="p">({</span><span class="s2">&quot;_id&quot;</span><span class="p">:</span> <span class="n">session_id</span><span class="p">},</span> <span class="p">{</span><span class="s2">&quot;progress&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;_id&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">})</span>
+    <span class="k">for</span> <span class="n">field</span> <span class="ow">in</span> <span class="n">cursor</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;progress&quot;</span><span class="p">:</span> <span class="n">field</span><span class="p">[</span><span class="s1">&#39;progress&#39;</span><span class="p">]}</span></div>
+
+
+
+<div class="viewcode-block" id="get_model_for_extraction_session">
+<a class="viewcode-back" href="../../../../wissenai.service.docvqa.html#wissenai.service.docvqa.db_mongo.get_model_for_extraction_session">[docs]</a>
+<span class="k">def</span> <span class="nf">get_model_for_extraction_session</span><span class="p">(</span><span class="n">db</span><span class="p">,</span> <span class="n">session_id</span><span class="p">):</span>
+    <span class="n">cursor</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">extractionSessionEntity</span><span class="o">.</span><span class="n">find</span><span class="p">({</span><span class="s2">&quot;_id&quot;</span><span class="p">:</span> <span class="n">session_id</span><span class="p">},</span> <span class="p">{</span><span class="s2">&quot;data&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;_id&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">})</span>
+    <span class="k">for</span> <span class="n">field</span> <span class="ow">in</span> <span class="n">cursor</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">field</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">]</span></div>
+
+
+
+<div class="viewcode-block" id="get_extraction_session_status">
+<a class="viewcode-back" href="../../../../wissenai.service.docvqa.html#wissenai.service.docvqa.db_mongo.get_extraction_session_status">[docs]</a>
+<span class="k">def</span> <span class="nf">get_extraction_session_status</span><span class="p">(</span><span class="n">db</span><span class="p">,</span> <span class="n">session_id</span><span class="p">):</span>
+    <span class="n">response</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">db</span><span class="o">.</span><span class="n">extractionSessionEntity</span><span class="o">.</span><span class="n">find</span><span class="p">({</span><span class="s2">&quot;_id&quot;</span><span class="p">:</span> <span class="n">session_id</span><span class="p">},</span> <span class="p">{</span><span class="s1">&#39;status&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;_id&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">}))</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">response</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">response</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s1">&#39;status&#39;</span><span class="p">]</span></div>
+
+
+<span class="c1"># def get_details_for_document(db, documentID):</span>
+
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+    <span class="n">db_uri</span> <span class="o">=</span> <span class="sa">r</span><span class="s2">&quot;mongodb://localhost:27017/john_doe_db&quot;</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">get_db</span><span class="p">(</span><span class="n">db_uri</span><span class="p">)</span>
+    <span class="c1"># get_model_for_training_session(db, &quot;1ecfc5d9-edce-6f42-ab69-a36ddab2862b&quot;)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">get_progress_of_extraction_session</span><span class="p">(</span><span class="n">db</span><span class="p">,</span> <span class="s2">&quot;1ed01154-28c8-666e-ae6b-030b602499cc&quot;</span><span class="p">))</span>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Wissen.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

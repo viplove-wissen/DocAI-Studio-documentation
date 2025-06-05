@@ -1,0 +1,26 @@
+site_name: Doc AI Studio Documentation
+
+# Navigation structure
+nav:
+  - Home: index.md
+
+# Theme configuration (optional)
+theme:
+  name: material  # Use Material for MkDocs for a modern look
+  features:
+    - navigation.expand
+    - navigation.top
+    - content.code.copy
+
+# Markdown extensions (optional, for enhanced Markdown features)
+markdown_extensions:
+  - toc:
+      permalink: "#"
+  - pymdownx.highlight
+  - pymdownx.superfences
+
+# Directory for source files
+docs_dir: docs
+
+# Directory for output files
+site_dir: site

@@ -1,0 +1,21 @@
+wissenai.extract.structured\_chunking.config package
+====================================================
+
+Submodules
+----------
+
+wissenai.extract.structured\_chunking.config.set\_config module
+---------------------------------------------------------------
+
+.. automodule:: wissenai.extract.structured_chunking.config.set_config
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Module contents
+---------------
+
+.. automodule:: wissenai.extract.structured_chunking.config
+   :members:
+   :undoc-members:
+   :show-inheritance:

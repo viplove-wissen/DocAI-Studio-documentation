@@ -1,0 +1,29 @@
+wissenai.postprocess package
+============================
+
+Submodules
+----------
+
+wissenai.postprocess.citation module
+------------------------------------
+
+.. automodule:: wissenai.postprocess.citation
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+wissenai.postprocess.semantic\_matching module
+----------------------------------------------
+
+.. automodule:: wissenai.postprocess.semantic_matching
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Module contents
+---------------
+
+.. automodule:: wissenai.postprocess
+   :members:
+   :undoc-members:
+   :show-inheritance:

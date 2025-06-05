@@ -1,0 +1,31 @@
+wissenai.extract.structured\_chunking package
+=============================================
+
+Subpackages
+-----------
+
+.. toctree::
+   :maxdepth: 4
+
+   wissenai.extract.structured_chunking.config
+   wissenai.extract.structured_chunking.src
+   wissenai.extract.structured_chunking.utils
+
+Submodules
+----------
+
+wissenai.extract.structured\_chunking.structure module
+------------------------------------------------------
+
+.. automodule:: wissenai.extract.structured_chunking.structure
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Module contents
+---------------
+
+.. automodule:: wissenai.extract.structured_chunking
+   :members:
+   :undoc-members:
+   :show-inheritance:

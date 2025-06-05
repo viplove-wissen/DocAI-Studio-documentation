@@ -1,0 +1,925 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>wissenai.identify.layout_detection &mdash; Doc AI Studio 1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=29a6c3e3"></script>
+      <script src="../../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            Doc AI Studio
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules.html">wissenai</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">Doc AI Studio</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">wissenai.identify.layout_detection</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for wissenai.identify.layout_detection</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">wissenai.extract.tables.tatr_tsr</span> <span class="kn">import</span> <span class="o">*</span>
+<span class="kn">import</span> <span class="nn">gc</span>
+<span class="kn">import</span> <span class="nn">cv2</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">supervision</span> <span class="k">as</span> <span class="nn">sv</span> <span class="c1"># pip install supervision</span>
+<span class="kn">from</span> <span class="nn">ultralytics</span> <span class="kn">import</span> <span class="n">YOLOv10</span>
+<span class="kn">from</span> <span class="nn">pdf2image</span> <span class="kn">import</span> <span class="n">convert_from_path</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">PIL</span> <span class="kn">import</span> <span class="n">Image</span>
+<span class="kn">import</span> <span class="nn">json</span>
+<span class="kn">import</span> <span class="nn">pytesseract</span>
+<span class="kn">import</span> <span class="nn">json</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">from</span> <span class="nn">PyPDF2</span> <span class="kn">import</span> <span class="n">PdfReader</span>
+<span class="kn">from</span> <span class="nn">datetime</span> <span class="kn">import</span> <span class="n">datetime</span>
+<span class="kn">from</span> <span class="nn">openpyxl</span> <span class="kn">import</span> <span class="n">Workbook</span>
+
+<span class="n">model</span> <span class="o">=</span> <span class="n">YOLOv10</span><span class="p">(</span><span class="s1">&#39;/shared_disk/viplove/doc_AI/AI_Studio_CoE(1)/AI_Studio_CoE/wissenai/identify/model_weights/yolov10x_best.pt&#39;</span><span class="p">)</span>
+<span class="n">output_directory_path</span> <span class="o">=</span> <span class="s2">&quot;/shared_disk/amitv/AI_Studio_CoE/wissenai/identify/output_directory_layout/output&quot;</span>
+<span class="k">try</span><span class="p">:</span>
+    <span class="n">os</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">output_directory_path</span><span class="p">)</span>
+<span class="k">except</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;file already exist&quot;</span><span class="p">)</span>
+<span class="n">class_names</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">names</span>
+
+
+<div class="viewcode-block" id="get_file_name_without_extension">
+<a class="viewcode-back" href="../../../wissenai.identify.html#wissenai.identify.layout_detection.get_file_name_without_extension">[docs]</a>
+<span class="k">def</span> <span class="nf">get_file_name_without_extension</span><span class="p">(</span><span class="n">file_path</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Extracts the file name without its extension from a given file path.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        file_path (str): The full path to the file.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        str: The file name without the extension.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">directory</span><span class="p">,</span> <span class="n">file_name</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">file_path</span><span class="p">)</span>
+    <span class="n">name</span><span class="p">,</span> <span class="n">extension</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">splitext</span><span class="p">(</span><span class="n">file_name</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">name</span></div>
+
+
+
+<div class="viewcode-block" id="dict_to_dataframe">
+<a class="viewcode-back" href="../../../wissenai.identify.html#wissenai.identify.layout_detection.dict_to_dataframe">[docs]</a>
+<span class="k">def</span> <span class="nf">dict_to_dataframe</span><span class="p">(</span><span class="n">data</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Convert a dictionary with lists of varying lengths into a DataFrame with dynamic column names.</span>
+
+<span class="sd">    Parameters:</span>
+<span class="sd">        data (dict): A dictionary where each key corresponds to a row in the DataFrame, and the value is a list of column values.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        pd.DataFrame: A DataFrame with dynamically generated column names.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># # Find the maximum length of the lists in the dictionary</span>
+    <span class="c1"># max_len = max(len(lst) for lst in data.values())</span>
+    <span class="k">if</span> <span class="n">data</span><span class="p">:</span>
+        <span class="c1"># Use max() with a default value to avoid ValueError</span>
+        <span class="n">max_len</span> <span class="o">=</span> <span class="nb">max</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">lst</span><span class="p">)</span> <span class="k">for</span> <span class="n">lst</span> <span class="ow">in</span> <span class="n">data</span><span class="o">.</span><span class="n">values</span><span class="p">()),</span> <span class="n">default</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="c1"># Handle the case where data is empty</span>
+        <span class="n">max_len</span> <span class="o">=</span> <span class="mi">0</span>
+
+    <span class="c1"># Check if data is empty</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">data</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Warning: Empty data received.&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">()</span>  <span class="c1"># Return an empty DataFrame if data is empty</span>
+
+    <span class="c1"># Generate dynamic column names based on the maximum length</span>
+    <span class="n">column_names</span> <span class="o">=</span> <span class="p">[</span><span class="sa">f</span><span class="s1">&#39;Column</span><span class="si">{</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="si">}</span><span class="s1">&#39;</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">max_len</span><span class="p">)]</span>
+
+    <span class="c1"># Convert the dictionary to a DataFrame</span>
+    <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="o">.</span><span class="n">from_dict</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">orient</span><span class="o">=</span><span class="s1">&#39;index&#39;</span><span class="p">,</span> <span class="n">columns</span><span class="o">=</span><span class="n">column_names</span><span class="p">)</span>
+
+    <span class="c1"># Check if the DataFrame has at least one row before setting columns</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">df</span><span class="o">.</span><span class="n">empty</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">df</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="c1"># Make the first row as column names</span>
+        <span class="n">df</span><span class="o">.</span><span class="n">columns</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span><span class="o">.</span><span class="n">reset_index</span><span class="p">(</span><span class="n">drop</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Warning: DataFrame is too short to reassign column names.&quot;</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">df</span></div>
+
+
+
+
+<div class="viewcode-block" id="tsr_inference_image">
+<a class="viewcode-back" href="../../../wissenai.identify.html#wissenai.identify.layout_detection.tsr_inference_image">[docs]</a>
+<span class="k">def</span> <span class="nf">tsr_inference_image</span><span class="p">(</span><span class="n">image</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Performs table structure recognition (TSR) on an input image.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        image (str or PIL.Image): Either a path to an image file or a PIL Image object.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        pd.DataFrame: A DataFrame containing the extracted table data.</span>
+
+<span class="sd">    Note:</span>
+<span class="sd">        The function measures and prints the time taken for table extraction.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">start_time</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span>
+
+    <span class="c1"># Assuming `image` is already a PIL image object</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">image</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="c1"># If the input is a path, convert it to an image</span>
+        <span class="n">image</span> <span class="o">=</span> <span class="n">Image</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">image</span><span class="p">)</span><span class="o">.</span><span class="n">convert</span><span class="p">(</span><span class="s2">&quot;RGB&quot;</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">image</span> <span class="o">=</span> <span class="n">image</span><span class="o">.</span><span class="n">convert</span><span class="p">(</span><span class="s2">&quot;RGB&quot;</span><span class="p">)</span>
+
+    <span class="c1"># Extract table structure</span>
+    <span class="n">cells</span><span class="p">,</span> <span class="n">orig_img</span> <span class="o">=</span> <span class="n">extract_table_struct</span><span class="p">(</span><span class="n">image</span><span class="p">,</span> <span class="kc">False</span><span class="p">,</span><span class="n">max_resize</span><span class="o">=</span><span class="mi">1000</span><span class="p">)</span>
+
+    <span class="c1"># Get cell coordinates by row</span>
+    <span class="n">cell_coordinates</span> <span class="o">=</span> <span class="n">get_cell_coordinates_by_row</span><span class="p">(</span><span class="n">cells</span><span class="p">)</span>
+
+    <span class="c1"># Apply OCR to the extracted cells</span>
+    <span class="n">data</span> <span class="o">=</span> <span class="n">apply_ocr</span><span class="p">(</span><span class="n">cell_coordinates</span><span class="p">,</span> <span class="n">orig_img</span><span class="p">)</span>
+
+    <span class="c1"># Convert the extracted data to a dataframe</span>
+    <span class="n">df</span> <span class="o">=</span> <span class="n">dict_to_dataframe</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+
+    <span class="n">end_time</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span>
+    <span class="nb">print</span><span class="p">(</span>
+        <span class="sa">f</span><span class="s2">&quot;Time taken for TTSR for a table extraction ----- start_time </span><span class="si">{</span><span class="n">start_time</span><span class="si">}</span><span class="s2"> to end_time </span><span class="si">{</span><span class="n">end_time</span><span class="si">}</span><span class="s2">,</span><span class="se">\n\n</span><span class="s2"> duration: </span><span class="si">{</span><span class="n">end_time</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">start_time</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;-&quot;</span> <span class="o">*</span> <span class="mi">100</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">df</span></div>
+
+
+
+<span class="c1"># Recursively convert numpy types to native Python types</span>
+<div class="viewcode-block" id="convert_numpy">
+<a class="viewcode-back" href="../../../wissenai.identify.html#wissenai.identify.layout_detection.convert_numpy">[docs]</a>
+<span class="k">def</span> <span class="nf">convert_numpy</span><span class="p">(</span><span class="n">data</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Recursively converts numpy types to native Python types for JSON serialization.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        data: Input data which may contain numpy types (ndarray, integer, floating).</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        The converted data with all numpy types replaced by native Python types.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">{</span><span class="n">key</span><span class="p">:</span> <span class="n">convert_numpy</span><span class="p">(</span><span class="n">value</span><span class="p">)</span> <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">data</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">convert_numpy</span><span class="p">(</span><span class="n">item</span><span class="p">)</span> <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">data</span><span class="p">]</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">integer</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">int</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">floating</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">data</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">data</span><span class="o">.</span><span class="n">to_dict</span><span class="p">(</span><span class="n">orient</span><span class="o">=</span><span class="s1">&#39;records&#39;</span><span class="p">)</span>  <span class="c1"># Convert DataFrame to a list of dictionaries</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">data</span></div>
+
+
+
+<div class="viewcode-block" id="filter_layout_blocks">
+<a class="viewcode-back" href="../../../wissenai.identify.html#wissenai.identify.layout_detection.filter_layout_blocks">[docs]</a>
+<span class="k">def</span> <span class="nf">filter_layout_blocks</span><span class="p">(</span><span class="n">input_data</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Filters the blocks with label_name &#39;Table&#39; from the input data.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        input_data (dict): The input JSON data.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        list: A list containing only the blocks with label_name &#39;Table&#39;.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">filtered_layout_blocks</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="c1"># Iterate through each page in the input data</span>
+    <span class="k">for</span> <span class="n">blocks</span> <span class="ow">in</span> <span class="n">input_data</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
+        <span class="c1"># Filter blocks where label_name is &#39;Table&#39; and add them to the list</span>
+        <span class="n">filtered_layout_blocks</span><span class="o">.</span><span class="n">extend</span><span class="p">([</span><span class="n">block</span> <span class="k">for</span> <span class="n">block</span> <span class="ow">in</span> <span class="n">blocks</span><span class="p">])</span>
+
+    <span class="k">return</span> <span class="n">filtered_layout_blocks</span></div>
+
+
+
+<div class="viewcode-block" id="convert_pdf_to_images">
+<a class="viewcode-back" href="../../../wissenai.identify.html#wissenai.identify.layout_detection.convert_pdf_to_images">[docs]</a>
+<span class="k">def</span> <span class="nf">convert_pdf_to_images</span><span class="p">(</span><span class="n">file_path</span><span class="p">,</span> <span class="n">batch_size</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span> <span class="n">dpi</span><span class="o">=</span><span class="mi">150</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Converts a PDF file to a series of images.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        file_path (str): Path to the PDF file.</span>
+<span class="sd">        batch_size (int): Number of pages to process at once.</span>
+<span class="sd">        dpi (int): DPI (dots per inch) for the output images.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        generator: A generator that yields batches of PIL Image objects.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">images</span> <span class="o">=</span> <span class="n">convert_from_path</span><span class="p">(</span><span class="n">file_path</span><span class="p">,</span> <span class="n">dpi</span><span class="o">=</span><span class="n">dpi</span><span class="p">)</span>
+    <span class="n">total_pages</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">images</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">page_generator</span><span class="p">():</span>
+        <span class="k">for</span> <span class="n">start_page</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">total_pages</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">batch_size</span><span class="p">):</span>
+            <span class="n">end_page</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">start_page</span> <span class="o">+</span> <span class="n">batch_size</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="n">total_pages</span><span class="p">)</span>
+            <span class="k">yield</span> <span class="n">images</span><span class="p">[</span><span class="n">start_page</span> <span class="o">-</span> <span class="mi">1</span><span class="p">:</span><span class="n">end_page</span><span class="p">]</span>  <span class="c1"># Adjusting index since Python uses 0-based indexing</span>
+
+    <span class="k">return</span> <span class="n">page_generator</span><span class="p">()</span></div>
+
+
+
+<div class="viewcode-block" id="read_json">
+<a class="viewcode-back" href="../../../wissenai.identify.html#wissenai.identify.layout_detection.read_json">[docs]</a>
+<span class="k">def</span> <span class="nf">read_json</span><span class="p">(</span><span class="n">json_file</span><span class="p">):</span>
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">json_file</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">file</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">json</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">file</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="filter_and_sort_headers">
+<a class="viewcode-back" href="../../../wissenai.identify.html#wissenai.identify.layout_detection.filter_and_sort_headers">[docs]</a>
+<span class="k">def</span> <span class="nf">filter_and_sort_headers</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">modified_json_output_filepath</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Filters and sorts header blocks (Page-header and Section-header) from layout data.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        data (dict): The input layout data.</span>
+<span class="sd">        modified_json_output_filepath (str): Path to save the modified JSON output.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        tuple: (sorted_data, modified_json_output_filepath) where sorted_data is the filtered and sorted data.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">sort_blocks_by_min_x</span><span class="p">(</span><span class="n">blocks</span><span class="p">):</span>
+        <span class="c1"># Sort blocks based on their minimum x-coordinate</span>
+        <span class="k">return</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">blocks</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">block</span><span class="p">:</span> <span class="n">block</span><span class="p">[</span><span class="s1">&#39;bbox&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">])</span>
+
+    <span class="k">def</span> <span class="nf">sort_blocks_by_min_y</span><span class="p">(</span><span class="n">blocks</span><span class="p">):</span>
+        <span class="c1"># Sort blocks based on their minimum y-coordinate</span>
+        <span class="k">return</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">blocks</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">block</span><span class="p">:</span> <span class="n">block</span><span class="p">[</span><span class="s1">&#39;bbox&#39;</span><span class="p">][</span><span class="mi">1</span><span class="p">])</span>
+
+    <span class="k">def</span> <span class="nf">find_headers_and_group</span><span class="p">(</span><span class="n">sorted_blocks</span><span class="p">):</span>
+        <span class="n">headers_list</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">current_group</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">previous_block</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="c1"># page_header_id = None</span>
+
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">block</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">sorted_blocks</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">previous_block</span><span class="p">:</span>
+                <span class="n">prev_xmax</span> <span class="o">=</span> <span class="n">previous_block</span><span class="p">[</span><span class="s1">&#39;bbox&#39;</span><span class="p">][</span><span class="mi">2</span><span class="p">]</span>
+                <span class="n">prev_xmax_threshold</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">previous_block</span><span class="p">[</span><span class="s1">&#39;bbox&#39;</span><span class="p">][</span><span class="mi">2</span><span class="p">])</span>
+                <span class="k">if</span> <span class="n">block</span><span class="p">[</span><span class="s1">&#39;bbox&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">prev_xmax</span> <span class="ow">and</span> <span class="n">block</span><span class="p">[</span><span class="s1">&#39;bbox&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">prev_xmax_threshold</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">current_group</span><span class="p">:</span>
+                        <span class="n">headers_list</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">sort_blocks_by_min_y</span><span class="p">(</span><span class="n">current_group</span><span class="p">))</span>
+                        <span class="n">current_group</span> <span class="o">=</span> <span class="p">[]</span>
+
+            <span class="n">current_group</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">block</span><span class="p">)</span>
+            <span class="n">previous_block</span> <span class="o">=</span> <span class="n">block</span>
+
+        <span class="k">if</span> <span class="n">current_group</span><span class="p">:</span>
+            <span class="n">headers_list</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">sort_blocks_by_min_y</span><span class="p">(</span><span class="n">current_group</span><span class="p">))</span>
+
+        <span class="k">return</span> <span class="n">headers_list</span>
+
+    <span class="n">result</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">blocks</span> <span class="ow">in</span> <span class="n">data</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="c1"># Filter blocks for Page-header and Section-header labels</span>
+        <span class="c1"># filtered_blocks = [block for block in blocks if block[&#39;label_name&#39;] in [&#39;Page-header&#39;, &#39;Section-header&#39;,&#39;Table&#39;]]</span>
+        <span class="n">filtered_blocks</span> <span class="o">=</span> <span class="p">[</span><span class="n">block</span> <span class="k">for</span> <span class="n">block</span> <span class="ow">in</span> <span class="n">blocks</span><span class="p">]</span>
+        <span class="n">sorted_blocks</span> <span class="o">=</span> <span class="n">sort_blocks_by_min_x</span><span class="p">(</span><span class="n">filtered_blocks</span><span class="p">)</span>
+        <span class="n">sorted_headers</span> <span class="o">=</span> <span class="n">find_headers_and_group</span><span class="p">(</span><span class="n">sorted_blocks</span><span class="p">)</span>
+        <span class="n">result</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">sorted_headers</span>
+
+    <span class="n">sorted_data</span> <span class="o">=</span> <span class="n">result</span>
+
+
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">modified_json_output_filepath</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+        <span class="n">json</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">sorted_data</span><span class="p">,</span> <span class="n">f</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">sorted_data</span><span class="p">,</span> <span class="n">modified_json_output_filepath</span></div>
+
+
+
+<div class="viewcode-block" id="filter_and_sort_layouts">
+<a class="viewcode-back" href="../../../wissenai.identify.html#wissenai.identify.layout_detection.filter_and_sort_layouts">[docs]</a>
+<span class="k">def</span> <span class="nf">filter_and_sort_layouts</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">modified_json_output_filepath</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Filters and sorts layout blocks from the input data.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        data (dict): The input layout data.</span>
+<span class="sd">        modified_json_output_filepath (str): Path to save the modified JSON output.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        tuple: (sorted_layout_data, modified_json_output_filepath) where sorted_layout_data is the filtered and sorted data.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># classes_list = [&#39;Page-header&#39;, &#39;Section-header&#39;]</span>
+
+    <span class="k">def</span> <span class="nf">sort_blocks_by_min_x</span><span class="p">(</span><span class="n">blocks</span><span class="p">):</span>
+        <span class="c1"># Sort blocks based on their minimum x-coordinate</span>
+        <span class="k">return</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">blocks</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">block</span><span class="p">:</span> <span class="n">block</span><span class="p">[</span><span class="s1">&#39;bbox&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">])</span>
+
+    <span class="k">def</span> <span class="nf">sort_blocks_by_min_y</span><span class="p">(</span><span class="n">blocks</span><span class="p">):</span>
+        <span class="c1"># Sort blocks based on their minimum y-coordinate</span>
+        <span class="k">return</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">blocks</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">block</span><span class="p">:</span> <span class="n">block</span><span class="p">[</span><span class="s1">&#39;bbox&#39;</span><span class="p">][</span><span class="mi">1</span><span class="p">])</span>
+
+    <span class="k">def</span> <span class="nf">find_classes_and_group</span><span class="p">(</span><span class="n">sorted_blocks</span><span class="p">):</span>
+        <span class="n">classes_list</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">current_group</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">previous_block</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">block</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">sorted_blocks</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">previous_block</span><span class="p">:</span>
+                <span class="n">prev_xmax</span> <span class="o">=</span> <span class="n">previous_block</span><span class="p">[</span><span class="s1">&#39;bbox&#39;</span><span class="p">][</span><span class="mi">2</span><span class="p">]</span>
+                <span class="n">prev_xmax_threshold</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">previous_block</span><span class="p">[</span><span class="s1">&#39;bbox&#39;</span><span class="p">][</span><span class="mi">2</span><span class="p">])</span>
+                <span class="k">if</span> <span class="n">block</span><span class="p">[</span><span class="s1">&#39;bbox&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">prev_xmax</span> <span class="ow">and</span> <span class="n">block</span><span class="p">[</span><span class="s1">&#39;bbox&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">prev_xmax_threshold</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">current_group</span><span class="p">:</span>
+                        <span class="n">classes_list</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">sort_blocks_by_min_y</span><span class="p">(</span><span class="n">current_group</span><span class="p">))</span>
+                        <span class="n">current_group</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="n">current_group</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">block</span><span class="p">)</span>
+            <span class="n">previous_block</span> <span class="o">=</span> <span class="n">block</span>
+
+        <span class="k">if</span> <span class="n">current_group</span><span class="p">:</span>
+            <span class="n">classes_list</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">sort_blocks_by_min_y</span><span class="p">(</span><span class="n">current_group</span><span class="p">))</span>
+
+        <span class="k">return</span> <span class="n">classes_list</span>
+
+    <span class="n">result</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">blocks</span> <span class="ow">in</span> <span class="n">data</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="c1"># Filter blocks for Page-header and Section-header labels</span>
+        <span class="c1"># filtered_blocks = [block for block in blocks if block[&#39;label_name&#39;] in classes_list]</span>
+        <span class="c1"># sorted_blocks = sort_blocks_by_min_x(filtered_blocks)</span>
+        <span class="n">sorted_blocks</span> <span class="o">=</span> <span class="n">sort_blocks_by_min_x</span><span class="p">(</span><span class="n">blocks</span><span class="p">)</span>
+        <span class="n">sorted_layouts</span> <span class="o">=</span> <span class="n">find_classes_and_group</span><span class="p">(</span><span class="n">sorted_blocks</span><span class="p">)</span>
+        <span class="n">result</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">sorted_layouts</span>
+
+    <span class="n">sorted_layout_data</span> <span class="o">=</span> <span class="n">result</span>
+
+
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">modified_json_output_filepath</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+        <span class="n">json</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">sorted_layout_data</span><span class="p">,</span> <span class="n">f</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">sorted_layout_data</span><span class="p">,</span> <span class="n">modified_json_output_filepath</span></div>
+
+
+
+<div class="viewcode-block" id="layout_detection">
+<a class="viewcode-back" href="../../../wissenai.identify.html#wissenai.identify.layout_detection.layout_detection">[docs]</a>
+<span class="k">def</span> <span class="nf">layout_detection</span><span class="p">(</span><span class="n">img_path</span><span class="p">,</span> <span class="n">model</span> <span class="o">=</span> <span class="n">model</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Performs layout detection on an image using YOLOv10 model.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        img_path (str): Path to the input image.</span>
+<span class="sd">        model: The YOLOv10 model to use for detection.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        tuple: (annotated_image, detections, results) where:</span>
+<span class="sd">            - annotated_image: The input image with detection annotations</span>
+<span class="sd">            - detections: The detection results</span>
+<span class="sd">            - results: Raw model results</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">image</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">imread</span><span class="p">(</span><span class="n">img_path</span><span class="p">)</span>
+    <span class="n">results</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="n">source</span><span class="o">=</span><span class="n">img_path</span><span class="p">,</span> <span class="n">conf</span><span class="o">=</span><span class="mf">0.55</span><span class="p">,</span> <span class="n">iou</span><span class="o">=</span><span class="mf">0.8</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+
+    <span class="n">detections</span> <span class="o">=</span> <span class="n">sv</span><span class="o">.</span><span class="n">Detections</span><span class="o">.</span><span class="n">from_ultralytics</span><span class="p">(</span><span class="n">results</span><span class="p">)</span>
+
+    <span class="c1"># Custom bounding box color (Red)</span>
+    <span class="n">bbox_color</span> <span class="o">=</span> <span class="n">sv</span><span class="o">.</span><span class="n">Color</span><span class="p">(</span><span class="n">r</span><span class="o">=</span><span class="mi">255</span><span class="p">,</span> <span class="n">g</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">b</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>  <span class="c1"># RGB format</span>
+
+    <span class="c1"># Custom bounding box annotator</span>
+    <span class="n">bounding_box_annotator</span> <span class="o">=</span> <span class="n">sv</span><span class="o">.</span><span class="n">BoxAnnotator</span><span class="p">(</span><span class="n">color</span><span class="o">=</span><span class="n">bbox_color</span><span class="p">)</span>
+    <span class="n">label_annotator</span> <span class="o">=</span> <span class="n">sv</span><span class="o">.</span><span class="n">LabelAnnotator</span><span class="p">()</span>
+
+    <span class="n">annotated_image</span> <span class="o">=</span> <span class="n">bounding_box_annotator</span><span class="o">.</span><span class="n">annotate</span><span class="p">(</span><span class="n">scene</span><span class="o">=</span><span class="n">image</span><span class="p">,</span> <span class="n">detections</span><span class="o">=</span><span class="n">detections</span><span class="p">)</span>
+    <span class="n">annotated_image</span> <span class="o">=</span> <span class="n">label_annotator</span><span class="o">.</span><span class="n">annotate</span><span class="p">(</span><span class="n">scene</span><span class="o">=</span><span class="n">annotated_image</span><span class="p">,</span> <span class="n">detections</span><span class="o">=</span><span class="n">detections</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">annotated_image</span><span class="p">,</span> <span class="n">detections</span><span class="p">,</span> <span class="n">results</span></div>
+
+
+
+<div class="viewcode-block" id="enhance_dpi">
+<a class="viewcode-back" href="../../../wissenai.identify.html#wissenai.identify.layout_detection.enhance_dpi">[docs]</a>
+<span class="k">def</span> <span class="nf">enhance_dpi</span><span class="p">(</span><span class="n">image</span><span class="p">,</span> <span class="n">new_dpi</span><span class="o">=</span><span class="mi">300</span><span class="p">,</span> <span class="n">old_dpi</span><span class="o">=</span><span class="mi">150</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Enhances the DPI of an image by resizing it.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        image (PIL.Image): Input image.</span>
+<span class="sd">        new_dpi (int): Desired output DPI.</span>
+<span class="sd">        old_dpi (int): Original DPI of the image.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        PIL.Image: The resized image with enhanced DPI.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># input is pil image</span>
+    <span class="c1"># Calculate the scaling factor based on desired DPI</span>
+    <span class="n">old_dpi</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">old_dpi</span><span class="p">)</span>
+    <span class="n">new_dpi</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">new_dpi</span><span class="p">)</span>
+
+    <span class="n">scaling_factor</span> <span class="o">=</span> <span class="n">new_dpi</span> <span class="o">/</span> <span class="n">old_dpi</span>  <span class="c1"># Assuming the original DPI is 72</span>
+    <span class="n">new_size</span> <span class="o">=</span> <span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">image</span><span class="o">.</span><span class="n">width</span> <span class="o">*</span> <span class="n">scaling_factor</span><span class="p">),</span> <span class="nb">int</span><span class="p">(</span><span class="n">image</span><span class="o">.</span><span class="n">height</span> <span class="o">*</span> <span class="n">scaling_factor</span><span class="p">))</span>
+
+    <span class="c1"># Resize the image</span>
+    <span class="n">resized_image</span> <span class="o">=</span> <span class="n">image</span><span class="o">.</span><span class="n">resize</span><span class="p">(</span><span class="n">new_size</span><span class="p">,</span> <span class="n">Image</span><span class="o">.</span><span class="n">LANCZOS</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">resized_image</span></div>
+
+
+
+<div class="viewcode-block" id="extract_text_from_bbox">
+<a class="viewcode-back" href="../../../wissenai.identify.html#wissenai.identify.layout_detection.extract_text_from_bbox">[docs]</a>
+<span class="k">def</span> <span class="nf">extract_text_from_bbox</span><span class="p">(</span><span class="n">image</span><span class="p">,</span> <span class="n">bbox</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Extracts text from a specified bounding box in an image.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        image (PIL.Image or np.ndarray): Input image.</span>
+<span class="sd">        bbox (dict): Bounding box coordinates with keys &#39;xmin&#39;, &#39;ymin&#39;, &#39;xmax&#39;, &#39;ymax&#39;.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        str: The extracted text from the bounding box region.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        TypeError: If the input image type is not supported.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Check image type and convert to OpenCV format if necessary</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">image</span><span class="p">,</span> <span class="n">Image</span><span class="o">.</span><span class="n">Image</span><span class="p">):</span>
+        <span class="c1"># Convert PIL Image to NumPy array (OpenCV format)</span>
+        <span class="n">image</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">image</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">image</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
+        <span class="c1"># Image is already in OpenCV format, no need to convert</span>
+        <span class="k">pass</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;Unsupported image type. The image should be either a PIL Image or a NumPy array.&quot;</span><span class="p">)</span>
+
+    <span class="c1"># Get image dimensions</span>
+    <span class="n">image_height</span><span class="p">,</span> <span class="n">image_width</span> <span class="o">=</span> <span class="n">image</span><span class="o">.</span><span class="n">shape</span><span class="p">[:</span><span class="mi">2</span><span class="p">]</span>
+
+    <span class="c1"># Calculate the bounding box coordinates with padding</span>
+    <span class="n">ymin</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">bbox</span><span class="p">[</span><span class="s1">&#39;ymin&#39;</span><span class="p">]</span> <span class="o">-</span> <span class="mi">5</span><span class="p">)</span>
+    <span class="n">ymax</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">image_height</span><span class="p">,</span> <span class="n">bbox</span><span class="p">[</span><span class="s1">&#39;ymax&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="mi">5</span><span class="p">)</span>
+    <span class="n">xmin</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">bbox</span><span class="p">[</span><span class="s1">&#39;xmin&#39;</span><span class="p">]</span> <span class="o">-</span> <span class="mi">20</span><span class="p">)</span>
+    <span class="n">xmax</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">image_width</span><span class="p">,</span> <span class="n">bbox</span><span class="p">[</span><span class="s1">&#39;xmax&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="mi">20</span><span class="p">)</span>
+
+    <span class="c1"># Crop the image</span>
+    <span class="n">cropped_image</span> <span class="o">=</span> <span class="n">image</span><span class="p">[</span><span class="n">ymin</span><span class="p">:</span><span class="n">ymax</span><span class="p">,</span> <span class="n">xmin</span><span class="p">:</span><span class="n">xmax</span><span class="p">]</span>
+
+    <span class="c1"># Check if the cropped image is empty</span>
+    <span class="c1"># if cropped_image.size == 0:</span>
+    <span class="c1">#     return None</span>
+    <span class="c1"># raise ValueError(&quot;The cropped image is empty. Please check the bounding box coordinates.&quot;)</span>
+
+    <span class="c1"># Convert cropped image to PIL Image</span>
+    <span class="n">cropped_image_pil</span> <span class="o">=</span> <span class="n">Image</span><span class="o">.</span><span class="n">fromarray</span><span class="p">(</span><span class="n">cv2</span><span class="o">.</span><span class="n">cvtColor</span><span class="p">(</span><span class="n">cropped_image</span><span class="p">,</span> <span class="n">cv2</span><span class="o">.</span><span class="n">COLOR_BGR2RGB</span><span class="p">))</span>
+
+    <span class="c1"># Enhance DPI</span>
+    <span class="n">high_dpi_image</span> <span class="o">=</span> <span class="n">enhance_dpi</span><span class="p">(</span><span class="n">cropped_image_pil</span><span class="p">)</span>
+
+    <span class="c1"># Convert back to OpenCV format</span>
+    <span class="n">high_dpi_image_cv</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">cvtColor</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">high_dpi_image</span><span class="p">),</span> <span class="n">cv2</span><span class="o">.</span><span class="n">COLOR_RGB2BGR</span><span class="p">)</span>
+
+    <span class="c1"># Convert to grayscale</span>
+    <span class="n">gray_image</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">cvtColor</span><span class="p">(</span><span class="n">high_dpi_image_cv</span><span class="p">,</span> <span class="n">cv2</span><span class="o">.</span><span class="n">COLOR_BGR2GRAY</span><span class="p">)</span>
+
+    <span class="c1"># Extract text</span>
+    <span class="n">extracted_text</span> <span class="o">=</span> <span class="n">pytesseract</span><span class="o">.</span><span class="n">image_to_string</span><span class="p">(</span><span class="n">gray_image</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">extracted_text</span></div>
+
+
+<div class="viewcode-block" id="save_cropped_image">
+<a class="viewcode-back" href="../../../wissenai.identify.html#wissenai.identify.layout_detection.save_cropped_image">[docs]</a>
+<span class="k">def</span> <span class="nf">save_cropped_image</span><span class="p">(</span><span class="n">cropped_image</span><span class="p">,</span> <span class="n">save_path</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Save cropped images to the specified path.&quot;&quot;&quot;</span>
+    <span class="n">cropped_image</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">save_path</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="save_table_to_excel">
+<a class="viewcode-back" href="../../../wissenai.identify.html#wissenai.identify.layout_detection.save_table_to_excel">[docs]</a>
+<span class="k">def</span> <span class="nf">save_table_to_excel</span><span class="p">(</span><span class="n">extracted_text</span><span class="p">,</span> <span class="n">table_excel_path</span><span class="p">,</span><span class="n">table_id</span><span class="p">,</span> <span class="n">page_number</span><span class="p">):</span>
+    <span class="n">excel_writer</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">ExcelWriter</span><span class="p">(</span><span class="n">table_excel_path</span><span class="p">,</span> <span class="n">engine</span><span class="o">=</span><span class="s1">&#39;openpyxl&#39;</span><span class="p">)</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Save extracted table text to Excel, creating sheets for each page number.&quot;&quot;&quot;</span>
+    <span class="n">sheet_name</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">table_id</span><span class="si">}</span><span class="s2">_Page_</span><span class="si">{</span><span class="n">page_number</span><span class="si">}</span><span class="s2">&quot;</span>
+
+    <span class="c1"># Check if extracted_text is a DataFrame; if not, attempt to convert it to one</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">extracted_text</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">):</span>
+      <span class="n">extracted_text</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">extracted_text</span><span class="p">)</span>
+
+    <span class="c1"># Check if the DataFrame is not empty before saving it to Excel</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">extracted_text</span><span class="o">.</span><span class="n">empty</span><span class="p">:</span>
+        <span class="n">extracted_text</span><span class="o">.</span><span class="n">to_excel</span><span class="p">(</span><span class="n">excel_writer</span><span class="p">,</span> <span class="n">sheet_name</span><span class="o">=</span><span class="n">sheet_name</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+    <span class="n">excel_writer</span><span class="o">.</span><span class="n">close</span><span class="p">()</span></div>
+
+
+
+
+<div class="viewcode-block" id="layout_pipeline">
+<a class="viewcode-back" href="../../../wissenai.identify.html#wissenai.identify.layout_detection.layout_pipeline">[docs]</a>
+<span class="k">def</span> <span class="nf">layout_pipeline</span><span class="p">(</span><span class="n">file_path</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span><span class="n">label_name</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">directory_path</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Main pipeline for processing PDF or image files to extract layout information.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        file_path (str): Path to the input file (PDF or image).</span>
+<span class="sd">        label_name (str, optional): Specific label to filter (e.g., &#39;Table&#39;).</span>
+<span class="sd">        directory_path (str): Directory to store output files.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        tuple: Depending on input parameters, returns various combinations of:</span>
+<span class="sd">            - sorted_layout_data: Processed layout data</span>
+<span class="sd">            - class_names: Model class names</span>
+<span class="sd">            - table_excel_dir: Directory containing Excel tables</span>
+<span class="sd">            - bbox_images_path: Directory containing images with bounding boxes</span>
+<span class="sd">            - cropped_images_path: Directory containing cropped images (if label_name specified)</span>
+
+<span class="sd">    Note:</span>
+<span class="sd">        For PDF inputs, processes pages in batches.</span>
+<span class="sd">        For image inputs, processes single image.</span>
+<span class="sd">        Creates multiple output directories for different types of output.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">if</span> <span class="n">file_path</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s1">&#39;.pdf&#39;</span><span class="p">):</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;File path:&quot;</span><span class="p">,</span> <span class="n">file_path</span><span class="p">)</span>
+        <span class="n">start_time</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span>
+        <span class="n">file_name</span> <span class="o">=</span> <span class="n">get_file_name_without_extension</span><span class="p">(</span><span class="n">file_path</span><span class="p">)</span>
+
+        <span class="n">pdf_images_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">directory_path</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">file_name</span><span class="si">}</span><span class="s2">_images&quot;</span><span class="p">)</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">pdf_images_path</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="n">bbox_images_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">pdf_images_path</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">file_name</span><span class="si">}</span><span class="s2">_bbox_images&quot;</span><span class="p">)</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">bbox_images_path</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="n">cropped_images_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">directory_path</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">file_name</span><span class="si">}</span><span class="s2">_cropped_</span><span class="si">{</span><span class="n">label_name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span> <span class="k">if</span> <span class="n">label_name</span> <span class="k">else</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="n">label_name</span><span class="p">:</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">cropped_images_path</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="n">json_output_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">directory_path</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">file_name</span><span class="si">}</span><span class="s2">_json_output&quot;</span><span class="p">)</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">json_output_path</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="n">table_excel_dir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">directory_path</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">file_name</span><span class="si">}</span><span class="s2">_xlsx_output&quot;</span><span class="p">)</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">table_excel_dir</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">table_excel_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">table_excel_dir</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">file_name</span><span class="si">}</span><span class="s2">_tables.xlsx&quot;</span><span class="p">)</span>
+        <span class="c1"># os.mkdir(table_excel_path, exist_ok = True)</span>
+
+
+        <span class="n">total_pages_processed</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">data_pdf</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="n">page_generator</span> <span class="o">=</span> <span class="n">convert_pdf_to_images</span><span class="p">(</span><span class="n">file_path</span><span class="p">,</span> <span class="n">batch_size</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span> <span class="n">dpi</span><span class="o">=</span><span class="mi">150</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">pages</span> <span class="ow">in</span> <span class="n">page_generator</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">pages</span><span class="p">:</span>
+                <span class="k">break</span>
+
+            <span class="k">for</span> <span class="n">page_num</span><span class="p">,</span> <span class="n">page_img</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">pages</span><span class="p">):</span>
+                <span class="n">current_page_num</span> <span class="o">=</span> <span class="n">total_pages_processed</span> <span class="o">+</span> <span class="n">page_num</span> <span class="o">+</span> <span class="mi">1</span>
+                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Processing file </span><span class="si">{</span><span class="n">file_name</span><span class="si">}</span><span class="s2">, page </span><span class="si">{</span><span class="n">current_page_num</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="c1">#</span>
+                <span class="n">image</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">page_img</span><span class="p">)</span>
+
+                <span class="n">h</span><span class="p">,</span> <span class="n">w</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">image</span><span class="o">.</span><span class="n">shape</span>
+                <span class="n">page_number</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">current_page_num</span><span class="p">)</span>
+
+                <span class="n">img_output_filename</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">file_name</span><span class="si">}</span><span class="s2">_page_no_</span><span class="si">{</span><span class="n">page_number</span><span class="si">}</span><span class="s2">.jpeg&quot;</span>
+                <span class="n">img_output_filepath</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">pdf_images_path</span><span class="p">,</span> <span class="n">img_output_filename</span><span class="p">)</span>
+                <span class="n">pil_image</span> <span class="o">=</span> <span class="n">Image</span><span class="o">.</span><span class="n">fromarray</span><span class="p">(</span><span class="n">image</span><span class="p">)</span>
+
+                <span class="n">pil_image</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">img_output_filepath</span><span class="p">)</span>
+
+                <span class="n">bbox_image</span><span class="p">,</span> <span class="n">page_detections_info</span><span class="p">,</span> <span class="n">results_info</span> <span class="o">=</span> <span class="n">layout_detection</span><span class="p">(</span><span class="n">img_output_filepath</span><span class="p">,</span> <span class="n">model</span><span class="p">)</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;*&quot;</span> <span class="o">*</span> <span class="mi">100</span><span class="p">)</span>
+
+                <span class="n">pil_bbox_image</span> <span class="o">=</span> <span class="n">Image</span><span class="o">.</span><span class="n">fromarray</span><span class="p">(</span><span class="n">bbox_image</span><span class="p">)</span>
+                <span class="n">bbox_output_filename</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;bbox_</span><span class="si">{</span><span class="n">file_name</span><span class="si">}</span><span class="s2">_page_no_</span><span class="si">{</span><span class="n">page_number</span><span class="si">}</span><span class="s2">.jpeg&quot;</span>
+                <span class="n">bbox_output_filepath</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">bbox_images_path</span><span class="p">,</span> <span class="n">bbox_output_filename</span><span class="p">)</span>
+
+                <span class="n">pil_bbox_image</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">bbox_output_filepath</span><span class="p">)</span>
+
+                <span class="n">page_information</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">bbox</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">page_detections_info</span><span class="o">.</span><span class="n">xyxy</span><span class="p">):</span>
+
+                    <span class="n">detected_label_name</span> <span class="o">=</span> <span class="n">page_detections_info</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;class_name&#39;</span><span class="p">][</span><span class="n">idx</span><span class="p">]</span>
+                    <span class="n">class_id</span> <span class="o">=</span> <span class="n">page_detections_info</span><span class="o">.</span><span class="n">class_id</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
+                    <span class="n">score</span> <span class="o">=</span> <span class="n">page_detections_info</span><span class="o">.</span><span class="n">confidence</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
+
+                    <span class="n">image_height</span> <span class="o">=</span> <span class="n">h</span>
+                    <span class="n">image_width</span> <span class="o">=</span> <span class="n">w</span>
+
+                    <span class="c1"># Calculate the bounding box coordinates with padding</span>
+                    <span class="n">ymin</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">bbox</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="mi">5</span><span class="p">)</span>
+                    <span class="n">ymax</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">image_height</span><span class="p">,</span> <span class="n">bbox</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span> <span class="o">+</span> <span class="mi">5</span><span class="p">)</span>
+                    <span class="n">xmin</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">bbox</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="mi">10</span><span class="p">)</span>
+                    <span class="n">xmax</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">image_width</span><span class="p">,</span> <span class="n">bbox</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">+</span> <span class="mi">10</span><span class="p">)</span>
+
+                    <span class="n">new_bbox</span> <span class="o">=</span> <span class="p">{</span>
+                        <span class="s2">&quot;xmin&quot;</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">bbox</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span>
+                        <span class="s2">&quot;ymin&quot;</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">bbox</span><span class="p">[</span><span class="mi">1</span><span class="p">]),</span>
+                        <span class="s2">&quot;xmax&quot;</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">bbox</span><span class="p">[</span><span class="mi">2</span><span class="p">]),</span>
+                        <span class="s2">&quot;ymax&quot;</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">bbox</span><span class="p">[</span><span class="mi">3</span><span class="p">])</span>
+                    <span class="p">}</span>
+
+                    <span class="k">if</span> <span class="n">label_name</span> <span class="ow">and</span> <span class="n">detected_label_name</span> <span class="o">==</span> <span class="n">label_name</span><span class="p">:</span>
+
+                        <span class="n">crop_bbox</span> <span class="o">=</span> <span class="p">(</span><span class="n">new_bbox</span><span class="p">[</span><span class="s2">&quot;xmin&quot;</span><span class="p">],</span> <span class="n">new_bbox</span><span class="p">[</span><span class="s2">&quot;ymin&quot;</span><span class="p">],</span> <span class="n">new_bbox</span><span class="p">[</span><span class="s2">&quot;xmax&quot;</span><span class="p">],</span> <span class="n">new_bbox</span><span class="p">[</span><span class="s2">&quot;ymax&quot;</span><span class="p">])</span>
+                        <span class="n">cropped_image</span> <span class="o">=</span> <span class="n">pil_image</span><span class="o">.</span><span class="n">crop</span><span class="p">(</span><span class="n">crop_bbox</span><span class="p">)</span>
+                        <span class="n">cropped_images_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">directory_path</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">file_name</span><span class="si">}</span><span class="s2">_cropped_</span><span class="si">{</span><span class="n">label_name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+                        <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">cropped_images_path</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+                        <span class="n">cropped_image_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
+                            <span class="n">cropped_images_path</span><span class="p">,</span>
+                            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">label_name</span><span class="si">}</span><span class="s2">_page_</span><span class="si">{</span><span class="n">page_number</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">idx</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="si">}</span><span class="s2">.jpeg&quot;</span>
+                        <span class="p">)</span>
+                        <span class="n">save_cropped_image</span><span class="p">(</span><span class="n">cropped_image</span><span class="p">,</span> <span class="n">cropped_image_path</span><span class="p">)</span>
+
+                        <span class="k">if</span> <span class="n">detected_label_name</span> <span class="o">==</span> <span class="s1">&#39;Table&#39;</span><span class="p">:</span>
+                            <span class="n">extracted_df</span> <span class="o">=</span> <span class="n">tsr_inference_image</span><span class="p">(</span><span class="n">cropped_image</span><span class="p">)</span>
+                            <span class="n">extracted_text</span> <span class="o">=</span> <span class="n">extracted_df</span>
+                            <span class="n">table_id</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;Table_</span><span class="si">{</span><span class="n">idx</span><span class="si">}</span><span class="s2">&quot;</span>
+                            <span class="n">save_table_to_excel</span><span class="p">(</span><span class="n">extracted_text</span><span class="p">,</span> <span class="n">table_excel_path</span><span class="p">,</span><span class="n">table_id</span><span class="p">,</span> <span class="n">current_page_num</span><span class="p">)</span>
+
+                        <span class="k">else</span><span class="p">:</span>
+                            <span class="n">extracted_text</span> <span class="o">=</span> <span class="n">extract_text_from_bbox</span><span class="p">(</span><span class="n">image</span><span class="p">,</span> <span class="n">new_bbox</span><span class="p">)</span>
+
+
+                    <span class="k">elif</span> <span class="n">detected_label_name</span> <span class="o">==</span><span class="s1">&#39;Table&#39;</span><span class="p">:</span>
+                        <span class="n">crop_bbox</span> <span class="o">=</span> <span class="p">(</span><span class="n">new_bbox</span><span class="p">[</span><span class="s2">&quot;xmin&quot;</span><span class="p">],</span> <span class="n">new_bbox</span><span class="p">[</span><span class="s2">&quot;ymin&quot;</span><span class="p">],</span> <span class="n">new_bbox</span><span class="p">[</span><span class="s2">&quot;xmax&quot;</span><span class="p">],</span> <span class="n">new_bbox</span><span class="p">[</span><span class="s2">&quot;ymax&quot;</span><span class="p">])</span>
+                        <span class="n">cropped_image</span> <span class="o">=</span> <span class="n">pil_image</span><span class="o">.</span><span class="n">crop</span><span class="p">(</span><span class="n">crop_bbox</span><span class="p">)</span>
+                        <span class="n">extracted_df</span> <span class="o">=</span> <span class="n">tsr_inference_image</span><span class="p">(</span><span class="n">cropped_image</span><span class="p">)</span>
+                        <span class="n">extracted_text</span> <span class="o">=</span> <span class="n">extracted_df</span>
+                        <span class="n">table_id</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;Table_</span><span class="si">{</span><span class="n">idx</span><span class="si">}</span><span class="s2">&quot;</span>
+                        <span class="n">save_table_to_excel</span><span class="p">(</span><span class="n">extracted_text</span><span class="p">,</span><span class="n">table_excel_path</span><span class="p">,</span><span class="n">table_id</span><span class="p">,</span> <span class="n">current_page_num</span><span class="p">)</span>
+
+
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">extracted_text</span> <span class="o">=</span> <span class="n">extract_text_from_bbox</span><span class="p">(</span><span class="n">image</span><span class="p">,</span> <span class="n">new_bbox</span><span class="p">)</span>
+
+                    <span class="n">page_block_id</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">idx</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="nb">str</span><span class="p">(</span><span class="n">current_page_num</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+                    <span class="n">page_block_id</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">page_block_id</span><span class="p">)</span>
+
+                    <span class="n">page_information</span><span class="o">.</span><span class="n">append</span><span class="p">({</span>
+                        <span class="s1">&#39;page_block_id&#39;</span><span class="p">:</span> <span class="n">page_block_id</span><span class="p">,</span>
+                        <span class="s1">&#39;label_name&#39;</span><span class="p">:</span> <span class="n">label_name</span><span class="p">,</span>
+                        <span class="s1">&#39;pdf_page_id&#39;</span><span class="p">:</span> <span class="n">current_page_num</span><span class="p">,</span>
+                        <span class="s1">&#39;pdf_name&#39;</span><span class="p">:</span> <span class="n">file_name</span><span class="p">,</span>
+                        <span class="s1">&#39;label_id&#39;</span><span class="p">:</span> <span class="n">class_id</span><span class="p">,</span>
+                        <span class="s1">&#39;yolo_detection_confidence_score&#39;</span><span class="p">:</span> <span class="n">score</span><span class="p">,</span>
+                        <span class="c1"># &#39;bbox&#39;: [new_bbox[&#39;xmin&#39;], new_bbox[&#39;ymin&#39;], new_bbox[&#39;xmax&#39;], new_bbox[&#39;ymax&#39;]],</span>
+                        <span class="s1">&#39;bbox&#39;</span><span class="p">:</span> <span class="p">[</span><span class="n">xmin</span><span class="p">,</span> <span class="n">ymin</span><span class="p">,</span> <span class="n">xmax</span><span class="p">,</span> <span class="n">ymax</span><span class="p">],</span>
+                        <span class="s1">&#39;page_img_width&#39;</span><span class="p">:</span> <span class="n">w</span><span class="p">,</span>
+                        <span class="s1">&#39;page_img_height&#39;</span><span class="p">:</span> <span class="n">h</span><span class="p">,</span>
+                        <span class="s1">&#39;extracted_text&#39;</span><span class="p">:</span> <span class="p">[</span><span class="n">extracted_text</span><span class="p">]</span>
+                    <span class="p">})</span>
+
+                <span class="n">data_pdf</span><span class="p">[</span><span class="n">page_number</span><span class="p">]</span> <span class="o">=</span> <span class="n">page_information</span>
+
+                <span class="c1"># Clear memory for large images</span>
+                <span class="k">del</span> <span class="n">image</span><span class="p">,</span> <span class="n">bbox_image</span>
+                <span class="n">gc</span><span class="o">.</span><span class="n">collect</span><span class="p">()</span>
+
+            <span class="n">total_pages_processed</span> <span class="o">+=</span> <span class="nb">len</span><span class="p">(</span><span class="n">pages</span><span class="p">)</span>
+
+        <span class="n">layout_json_file_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">json_output_path</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;yolo_model_detections_</span><span class="si">{</span><span class="n">file_name</span><span class="si">}</span><span class="s2">.json&quot;</span><span class="p">)</span>
+
+        <span class="n">data_pdf</span> <span class="o">=</span> <span class="n">convert_numpy</span><span class="p">(</span><span class="n">data_pdf</span><span class="p">)</span>
+        <span class="c1"># layout_list_data = filter_layout_blocks(data_pdf)</span>
+
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">layout_json_file_path</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">json_file</span><span class="p">:</span>
+            <span class="n">json</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">data_pdf</span><span class="p">,</span> <span class="n">json_file</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span>
+
+        <span class="n">sorted_layout_data</span><span class="p">,</span> <span class="n">sorted_layout_json_filepath</span> <span class="o">=</span> <span class="n">filter_and_sort_layouts</span><span class="p">(</span><span class="n">data_pdf</span><span class="p">,</span> <span class="n">layout_json_file_path</span><span class="p">)</span>
+
+
+        <span class="n">end_time</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span>
+
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Processed </span><span class="si">{</span><span class="n">file_name</span><span class="si">}</span><span class="s2"> from </span><span class="si">{</span><span class="n">start_time</span><span class="si">}</span><span class="s2"> to </span><span class="si">{</span><span class="n">end_time</span><span class="si">}</span><span class="s2">, duration: </span><span class="si">{</span><span class="n">end_time</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">start_time</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;JSON file created at: </span><span class="si">{</span><span class="n">layout_json_file_path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">label_name</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">sorted_layout_data</span><span class="p">,</span> <span class="n">class_names</span><span class="p">,</span><span class="n">table_excel_dir</span><span class="p">,</span><span class="n">bbox_images_path</span><span class="p">,</span><span class="n">cropped_images_path</span>
+
+        <span class="k">return</span> <span class="n">sorted_layout_data</span><span class="p">,</span> <span class="n">class_names</span><span class="p">,</span><span class="n">table_excel_dir</span><span class="p">,</span><span class="n">bbox_images_path</span>
+
+    <span class="k">elif</span> <span class="n">file_path</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span><span class="o">.</span><span class="n">endswith</span><span class="p">((</span><span class="s2">&quot;.jpg&quot;</span><span class="p">,</span> <span class="s2">&quot;.jpeg&quot;</span><span class="p">,</span> <span class="s2">&quot;.png&quot;</span><span class="p">)):</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;File path:&quot;</span><span class="p">,</span> <span class="n">file_path</span><span class="p">)</span>
+        <span class="n">start_time</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span>
+        <span class="n">file_name</span> <span class="o">=</span> <span class="n">get_file_name_without_extension</span><span class="p">(</span><span class="n">file_path</span><span class="p">)</span>
+
+        <span class="n">images_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">directory_path</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">file_name</span><span class="si">}</span><span class="s2">_images&quot;</span><span class="p">)</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">images_path</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="n">bbox_images_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">images_path</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">file_name</span><span class="si">}</span><span class="s2">_bbox_images&quot;</span><span class="p">)</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">bbox_images_path</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="n">cropped_images_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">directory_path</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">file_name</span><span class="si">}</span><span class="s2">_cropped_</span><span class="si">{</span><span class="n">label_name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span> <span class="k">if</span> <span class="n">label_name</span> <span class="k">else</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="n">label_name</span><span class="p">:</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">cropped_images_path</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+
+        <span class="n">table_excel_dir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">directory_path</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">file_name</span><span class="si">}</span><span class="s2">_xlsx_output&quot;</span><span class="p">)</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">table_excel_dir</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">table_excel_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">table_excel_dir</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">file_name</span><span class="si">}</span><span class="s2">_tables.xlsx&quot;</span><span class="p">)</span>
+
+
+        <span class="c1"># Load the image</span>
+        <span class="n">image</span> <span class="o">=</span> <span class="n">Image</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">file_path</span><span class="p">)</span>
+        <span class="c1"># print(&quot;kg&quot;)</span>
+        <span class="n">image_np</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">image</span><span class="p">)</span>
+        <span class="n">h</span><span class="p">,</span> <span class="n">w</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">image_np</span><span class="o">.</span><span class="n">shape</span>
+        <span class="c1"># print(&quot;test02&quot;)</span>
+
+        <span class="n">img_output_filename</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">file_name</span><span class="si">}</span><span class="s2">.jpeg&quot;</span>
+        <span class="n">img_output_filepath</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">images_path</span><span class="p">,</span> <span class="n">img_output_filename</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">image</span><span class="p">,</span> <span class="n">Image</span><span class="o">.</span><span class="n">Image</span><span class="p">):</span>
+            <span class="n">pil_image</span> <span class="o">=</span> <span class="n">image</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">pil_image</span> <span class="o">=</span> <span class="n">Image</span><span class="o">.</span><span class="n">fromarray</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">image</span><span class="p">))</span>
+
+        <span class="n">pil_image</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">img_output_filepath</span><span class="p">)</span>
+
+        <span class="n">bbox_image</span><span class="p">,</span> <span class="n">page_detections_info</span><span class="p">,</span> <span class="n">results_info</span> <span class="o">=</span> <span class="n">layout_detection</span><span class="p">(</span><span class="n">img_output_filepath</span><span class="p">,</span> <span class="n">model</span><span class="p">)</span>
+        <span class="c1"># print(&quot;test03&quot;)</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">bbox_image</span><span class="p">,</span> <span class="n">Image</span><span class="o">.</span><span class="n">Image</span><span class="p">):</span>
+            <span class="n">pil_bbox_image</span> <span class="o">=</span> <span class="n">bbox_image</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">pil_bbox_image</span> <span class="o">=</span> <span class="n">Image</span><span class="o">.</span><span class="n">fromarray</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">bbox_image</span><span class="p">))</span>
+
+        <span class="n">bbox_output_filename</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;bbox_</span><span class="si">{</span><span class="n">file_name</span><span class="si">}</span><span class="s2">.jpeg&quot;</span>
+        <span class="n">bbox_output_filepath</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">bbox_images_path</span><span class="p">,</span> <span class="n">bbox_output_filename</span><span class="p">)</span>
+        <span class="n">pil_bbox_image</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">bbox_output_filepath</span><span class="p">)</span>
+
+        <span class="n">page_information</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">bbox</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">page_detections_info</span><span class="o">.</span><span class="n">xyxy</span><span class="p">):</span>
+            <span class="n">detected_label_name</span> <span class="o">=</span> <span class="n">page_detections_info</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;class_name&#39;</span><span class="p">][</span><span class="n">idx</span><span class="p">]</span>
+            <span class="n">class_id</span> <span class="o">=</span> <span class="n">page_detections_info</span><span class="o">.</span><span class="n">class_id</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
+            <span class="n">score</span> <span class="o">=</span> <span class="n">page_detections_info</span><span class="o">.</span><span class="n">confidence</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
+
+            <span class="n">ymin</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">bbox</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="mi">5</span><span class="p">)</span>
+            <span class="n">ymax</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">h</span><span class="p">,</span> <span class="n">bbox</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span> <span class="o">+</span> <span class="mi">5</span><span class="p">)</span>
+            <span class="n">xmin</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">bbox</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="mi">10</span><span class="p">)</span>
+            <span class="n">xmax</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">w</span><span class="p">,</span> <span class="n">bbox</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">+</span> <span class="mi">10</span><span class="p">)</span>
+
+            <span class="n">new_bbox</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="s2">&quot;xmin&quot;</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">bbox</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span>
+                <span class="s2">&quot;ymin&quot;</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">bbox</span><span class="p">[</span><span class="mi">1</span><span class="p">]),</span>
+                <span class="s2">&quot;xmax&quot;</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">bbox</span><span class="p">[</span><span class="mi">2</span><span class="p">]),</span>
+                <span class="s2">&quot;ymax&quot;</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">bbox</span><span class="p">[</span><span class="mi">3</span><span class="p">])</span>
+            <span class="p">}</span>
+
+            <span class="k">if</span> <span class="n">label_name</span> <span class="ow">and</span> <span class="n">detected_label_name</span> <span class="o">==</span> <span class="n">label_name</span><span class="p">:</span>
+                <span class="n">crop_bbox</span> <span class="o">=</span> <span class="p">(</span><span class="n">new_bbox</span><span class="p">[</span><span class="s2">&quot;xmin&quot;</span><span class="p">],</span> <span class="n">new_bbox</span><span class="p">[</span><span class="s2">&quot;ymin&quot;</span><span class="p">],</span> <span class="n">new_bbox</span><span class="p">[</span><span class="s2">&quot;xmax&quot;</span><span class="p">],</span> <span class="n">new_bbox</span><span class="p">[</span><span class="s2">&quot;ymax&quot;</span><span class="p">])</span>
+                <span class="n">cropped_image</span> <span class="o">=</span> <span class="n">pil_image</span><span class="o">.</span><span class="n">crop</span><span class="p">(</span><span class="n">crop_bbox</span><span class="p">)</span>
+                <span class="n">cropped_images_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">directory_path</span><span class="p">,</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">file_name</span><span class="si">}</span><span class="s2">_cropped_</span><span class="si">{</span><span class="n">label_name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+                <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">cropped_images_path</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+                <span class="n">cropped_image_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
+                                                    <span class="n">cropped_images_path</span><span class="p">,</span>
+                                                    <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">label_name</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">idx</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="si">}</span><span class="s2">.jpeg&quot;</span>
+                                                <span class="p">)</span>
+                <span class="n">save_cropped_image</span><span class="p">(</span><span class="n">cropped_image</span><span class="p">,</span> <span class="n">cropped_image_path</span><span class="p">)</span>
+
+                <span class="k">if</span> <span class="n">detected_label_name</span> <span class="o">==</span> <span class="s1">&#39;Table&#39;</span><span class="p">:</span>
+                    <span class="n">extracted_df</span> <span class="o">=</span> <span class="n">tsr_inference_image</span><span class="p">(</span><span class="n">cropped_image</span><span class="p">)</span>
+                    <span class="n">extracted_text</span> <span class="o">=</span> <span class="n">extracted_df</span>
+                    <span class="n">table_id</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;Table_</span><span class="si">{</span><span class="n">idx</span><span class="si">}</span><span class="s2">&quot;</span>
+                    <span class="n">save_table_to_excel</span><span class="p">(</span><span class="n">extracted_text</span><span class="p">,</span> <span class="n">table_excel_path</span><span class="p">,</span><span class="n">table_id</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>  <span class="c1"># Assuming single page/image input</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">extracted_text</span> <span class="o">=</span> <span class="n">extract_text_from_bbox</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">image</span><span class="p">),</span> <span class="n">new_bbox</span><span class="p">)</span>
+
+            <span class="k">elif</span> <span class="n">detected_label_name</span> <span class="o">==</span><span class="s1">&#39;Table&#39;</span><span class="p">:</span>
+                <span class="n">crop_bbox</span> <span class="o">=</span> <span class="p">(</span><span class="n">new_bbox</span><span class="p">[</span><span class="s2">&quot;xmin&quot;</span><span class="p">],</span> <span class="n">new_bbox</span><span class="p">[</span><span class="s2">&quot;ymin&quot;</span><span class="p">],</span> <span class="n">new_bbox</span><span class="p">[</span><span class="s2">&quot;xmax&quot;</span><span class="p">],</span> <span class="n">new_bbox</span><span class="p">[</span><span class="s2">&quot;ymax&quot;</span><span class="p">])</span>
+                <span class="n">cropped_image</span> <span class="o">=</span> <span class="n">pil_image</span><span class="o">.</span><span class="n">crop</span><span class="p">(</span><span class="n">crop_bbox</span><span class="p">)</span>
+                <span class="n">extracted_df</span> <span class="o">=</span> <span class="n">tsr_inference_image</span><span class="p">(</span><span class="n">cropped_image</span><span class="p">)</span>
+                <span class="n">extracted_text</span> <span class="o">=</span> <span class="n">extracted_df</span>
+                <span class="n">table_id</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;Table_</span><span class="si">{</span><span class="n">idx</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="n">save_table_to_excel</span><span class="p">(</span><span class="n">extracted_text</span><span class="p">,</span> <span class="n">table_excel_path</span><span class="p">,</span><span class="n">table_id</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">extracted_text</span> <span class="o">=</span> <span class="n">extract_text_from_bbox</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">image</span><span class="p">),</span> <span class="n">new_bbox</span><span class="p">)</span>
+
+            <span class="n">page_block_id</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">idx</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="s1">&#39;1&#39;</span><span class="si">}</span><span class="s2">&quot;</span>  <span class="c1"># Assuming single page for images</span>
+            <span class="n">page_block_id</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">page_block_id</span><span class="p">)</span>
+
+            <span class="n">page_information</span><span class="o">.</span><span class="n">append</span><span class="p">({</span>
+                <span class="s1">&#39;page_block_id&#39;</span><span class="p">:</span> <span class="n">page_block_id</span><span class="p">,</span>
+                <span class="s1">&#39;label_name&#39;</span><span class="p">:</span> <span class="n">label_name</span><span class="p">,</span>
+                <span class="s1">&#39;pdf_page_id&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>  <span class="c1"># Assuming page 1 for images</span>
+                <span class="s1">&#39;pdf_name&#39;</span><span class="p">:</span> <span class="n">file_name</span><span class="p">,</span>
+                <span class="s1">&#39;label_id&#39;</span><span class="p">:</span> <span class="n">class_id</span><span class="p">,</span>
+                <span class="s1">&#39;yolo_detection_confidence_score&#39;</span><span class="p">:</span> <span class="n">score</span><span class="p">,</span>
+                <span class="s1">&#39;bbox&#39;</span><span class="p">:</span> <span class="p">[</span><span class="n">xmin</span><span class="p">,</span> <span class="n">ymin</span><span class="p">,</span> <span class="n">xmax</span><span class="p">,</span> <span class="n">ymax</span><span class="p">],</span>
+                <span class="s1">&#39;page_img_width&#39;</span><span class="p">:</span> <span class="n">w</span><span class="p">,</span>
+                <span class="s1">&#39;page_img_height&#39;</span><span class="p">:</span> <span class="n">h</span><span class="p">,</span>
+                <span class="s1">&#39;extracted_text&#39;</span><span class="p">:</span> <span class="p">[</span><span class="n">extracted_text</span><span class="p">]</span>
+            <span class="p">})</span>
+
+        <span class="n">data_image</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;1&quot;</span><span class="p">:</span> <span class="n">page_information</span><span class="p">}</span>
+
+        <span class="n">json_output_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">directory_path</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">file_name</span><span class="si">}</span><span class="s2">_json_output&quot;</span><span class="p">)</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">json_output_path</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="n">layout_json_file_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">json_output_path</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;yolo_model_detections_</span><span class="si">{</span><span class="n">file_name</span><span class="si">}</span><span class="s2">.json&quot;</span><span class="p">)</span>
+
+        <span class="n">data_image</span> <span class="o">=</span> <span class="n">convert_numpy</span><span class="p">(</span><span class="n">data_image</span><span class="p">)</span>
+        <span class="n">layout_list_data</span> <span class="o">=</span> <span class="n">filter_layout_blocks</span><span class="p">(</span><span class="n">data_image</span><span class="p">)</span>
+
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">layout_json_file_path</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">json_file</span><span class="p">:</span>
+            <span class="n">json</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">data_image</span><span class="p">,</span> <span class="n">json_file</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span>
+
+        <span class="n">sorted_layout_data</span><span class="p">,</span> <span class="n">sorted_layout_json_filepath</span> <span class="o">=</span> <span class="n">filter_and_sort_layouts</span><span class="p">(</span><span class="n">data_image</span><span class="p">,</span> <span class="n">layout_json_file_path</span><span class="p">)</span>
+        <span class="c1"># print(&quot;test04&quot;)</span>
+
+        <span class="n">end_time</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span>
+
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Processed </span><span class="si">{</span><span class="n">file_name</span><span class="si">}</span><span class="s2"> from </span><span class="si">{</span><span class="n">start_time</span><span class="si">}</span><span class="s2"> to </span><span class="si">{</span><span class="n">end_time</span><span class="si">}</span><span class="s2">, duration: </span><span class="si">{</span><span class="n">end_time</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">start_time</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;JSON file created at: </span><span class="si">{</span><span class="n">layout_json_file_path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">label_name</span> <span class="p">:</span>
+            <span class="k">return</span> <span class="n">sorted_layout_data</span><span class="p">,</span> <span class="n">class_names</span><span class="p">,</span><span class="n">table_excel_dir</span><span class="p">,</span><span class="n">bbox_images_path</span><span class="p">,</span><span class="n">cropped_images_path</span>
+
+        <span class="k">return</span> <span class="n">sorted_layout_data</span><span class="p">,</span> <span class="n">class_names</span><span class="p">,</span> <span class="n">table_excel_dir</span><span class="p">,</span><span class="n">bbox_images_path</span></div>
+
+
+
+
+<span class="c1">#if __main__ == &quot;__name__&quot;:</span>
+<span class="c1">#    file_path = &quot;/shared_disk/amitv/AI_Studio_CoE/wissenai/sample_images/Input/3_column_sample 5.pdf&quot;</span>
+<span class="c1">#    output_directory = &quot;/shared_disk/amitv/AI_Studio_CoE/wissenai/sample_images/output&quot;</span>
+<span class="c1">#    layout_pipeline(file_path = file_path, directory_path = output_directory)</span>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Wissen.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

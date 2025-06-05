@@ -1,0 +1,29 @@
+wissenai.extract.vqa package
+============================
+
+Submodules
+----------
+
+wissenai.extract.vqa.docvqa module
+----------------------------------
+
+.. automodule:: wissenai.extract.vqa.docvqa
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+wissenai.extract.vqa.extractor module
+-------------------------------------
+
+.. automodule:: wissenai.extract.vqa.extractor
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Module contents
+---------------
+
+.. automodule:: wissenai.extract.vqa
+   :members:
+   :undoc-members:
+   :show-inheritance:

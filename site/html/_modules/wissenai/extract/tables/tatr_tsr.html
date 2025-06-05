@@ -1,0 +1,441 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>wissenai.extract.tables.tatr_tsr &mdash; Doc AI Studio 1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../../_static/documentation_options.js?v=29a6c3e3"></script>
+      <script src="../../../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../index.html" class="icon icon-home">
+            Doc AI Studio
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../modules.html">wissenai</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../index.html">Doc AI Studio</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">wissenai.extract.tables.tatr_tsr</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for wissenai.extract.tables.tatr_tsr</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Module for table structure recognition using table transformer model.</span>
+<span class="sd">Import the function tsr_inference for inferencing, visualization and generating csv output file.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">from</span> <span class="nn">transformers</span> <span class="kn">import</span> <span class="n">AutoModelForObjectDetection</span>
+<span class="kn">from</span> <span class="nn">PIL</span> <span class="kn">import</span> <span class="n">Image</span>
+<span class="kn">from</span> <span class="nn">torchvision</span> <span class="kn">import</span> <span class="n">transforms</span>
+<span class="kn">import</span> <span class="nn">torch</span>
+<span class="kn">import</span> <span class="nn">matplotlib</span>
+<span class="n">matplotlib</span><span class="o">.</span><span class="n">use</span><span class="p">(</span><span class="s1">&#39;Agg&#39;</span><span class="p">)</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+
+<span class="kn">import</span> <span class="nn">matplotlib.patches</span> <span class="k">as</span> <span class="nn">patches</span>
+<span class="kn">from</span> <span class="nn">matplotlib.patches</span> <span class="kn">import</span> <span class="n">Patch</span>
+<span class="kn">from</span> <span class="nn">transformers</span> <span class="kn">import</span> <span class="n">TableTransformerForObjectDetection</span>
+<span class="kn">from</span> <span class="nn">PIL</span> <span class="kn">import</span> <span class="n">ImageDraw</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">csv</span>
+<span class="c1">#import easyocr</span>
+<span class="kn">from</span> <span class="nn">tqdm.auto</span> <span class="kn">import</span> <span class="n">tqdm</span>
+<span class="kn">from</span> <span class="nn">paddleocr</span> <span class="kn">import</span> <span class="n">PaddleOCR</span><span class="p">,</span><span class="n">draw_ocr</span>
+<span class="kn">import</span> <span class="nn">csv</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+
+<div class="viewcode-block" id="box_cxcywh_to_xyxy">
+<a class="viewcode-back" href="../../../../wissenai.extract.tables.html#wissenai.extract.tables.tatr_tsr.box_cxcywh_to_xyxy">[docs]</a>
+<span class="k">def</span> <span class="nf">box_cxcywh_to_xyxy</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+    <span class="n">x_c</span><span class="p">,</span> <span class="n">y_c</span><span class="p">,</span> <span class="n">w</span><span class="p">,</span> <span class="n">h</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">unbind</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">b</span> <span class="o">=</span> <span class="p">[(</span><span class="n">x_c</span> <span class="o">-</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="n">w</span><span class="p">),</span> <span class="p">(</span><span class="n">y_c</span> <span class="o">-</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="n">h</span><span class="p">),</span> <span class="p">(</span><span class="n">x_c</span> <span class="o">+</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="n">w</span><span class="p">),</span> <span class="p">(</span><span class="n">y_c</span> <span class="o">+</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="n">h</span><span class="p">)]</span>
+    <span class="k">return</span> <span class="n">torch</span><span class="o">.</span><span class="n">stack</span><span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="rescale_bboxes">
+<a class="viewcode-back" href="../../../../wissenai.extract.tables.html#wissenai.extract.tables.tatr_tsr.rescale_bboxes">[docs]</a>
+<span class="k">def</span> <span class="nf">rescale_bboxes</span><span class="p">(</span><span class="n">out_bbox</span><span class="p">,</span> <span class="n">size</span><span class="p">):</span>
+    <span class="n">img_w</span><span class="p">,</span> <span class="n">img_h</span> <span class="o">=</span> <span class="n">size</span>
+    <span class="n">b</span> <span class="o">=</span> <span class="n">box_cxcywh_to_xyxy</span><span class="p">(</span><span class="n">out_bbox</span><span class="p">)</span>
+    <span class="n">b</span> <span class="o">=</span> <span class="n">b</span> <span class="o">*</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">([</span><span class="n">img_w</span><span class="p">,</span> <span class="n">img_h</span><span class="p">,</span> <span class="n">img_w</span><span class="p">,</span> <span class="n">img_h</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">b</span></div>
+
+
+<div class="viewcode-block" id="outputs_to_objects">
+<a class="viewcode-back" href="../../../../wissenai.extract.tables.html#wissenai.extract.tables.tatr_tsr.outputs_to_objects">[docs]</a>
+<span class="k">def</span> <span class="nf">outputs_to_objects</span><span class="p">(</span><span class="n">outputs</span><span class="p">,</span> <span class="n">img_size</span><span class="p">,</span> <span class="n">id2label</span><span class="p">):</span>
+    <span class="n">m</span> <span class="o">=</span> <span class="n">outputs</span><span class="o">.</span><span class="n">logits</span><span class="o">.</span><span class="n">softmax</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">pred_labels</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">indices</span><span class="o">.</span><span class="n">detach</span><span class="p">()</span><span class="o">.</span><span class="n">cpu</span><span class="p">()</span><span class="o">.</span><span class="n">numpy</span><span class="p">())[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">pred_scores</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">values</span><span class="o">.</span><span class="n">detach</span><span class="p">()</span><span class="o">.</span><span class="n">cpu</span><span class="p">()</span><span class="o">.</span><span class="n">numpy</span><span class="p">())[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="c1">#print(len(pred_labels))</span>
+    <span class="c1">#print(len(pred_scores))</span>
+    <span class="n">pred_bboxes</span> <span class="o">=</span> <span class="n">outputs</span><span class="p">[</span><span class="s1">&#39;pred_boxes&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">detach</span><span class="p">()</span><span class="o">.</span><span class="n">cpu</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">pred_bboxes</span> <span class="o">=</span> <span class="p">[</span><span class="n">elem</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span> <span class="k">for</span> <span class="n">elem</span> <span class="ow">in</span> <span class="n">rescale_bboxes</span><span class="p">(</span><span class="n">pred_bboxes</span><span class="p">,</span> <span class="n">img_size</span><span class="p">)]</span>
+    <span class="c1">#print(len(pred_bboxes))</span>
+    <span class="n">objects</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">label</span><span class="p">,</span> <span class="n">score</span><span class="p">,</span> <span class="n">bbox</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">pred_labels</span><span class="p">,</span> <span class="n">pred_scores</span><span class="p">,</span> <span class="n">pred_bboxes</span><span class="p">):</span>
+        <span class="n">class_label</span> <span class="o">=</span> <span class="n">id2label</span><span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">label</span><span class="p">)]</span>
+        <span class="c1">#print(class_label)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">class_label</span> <span class="o">==</span> <span class="s1">&#39;no object&#39;</span><span class="p">:</span>
+            <span class="n">objects</span><span class="o">.</span><span class="n">append</span><span class="p">({</span><span class="s1">&#39;label&#39;</span><span class="p">:</span> <span class="n">class_label</span><span class="p">,</span> <span class="s1">&#39;score&#39;</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="n">score</span><span class="p">),</span>
+                            <span class="s1">&#39;bbox&#39;</span><span class="p">:</span> <span class="p">[</span><span class="nb">float</span><span class="p">(</span><span class="n">elem</span><span class="p">)</span> <span class="k">for</span> <span class="n">elem</span> <span class="ow">in</span> <span class="n">bbox</span><span class="p">]})</span>
+
+    <span class="k">return</span> <span class="n">objects</span></div>
+
+
+<span class="n">device</span> <span class="o">=</span> <span class="s2">&quot;cuda&quot;</span>
+<span class="n">structure_model</span> <span class="o">=</span> <span class="n">TableTransformerForObjectDetection</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="s2">&quot;microsoft/table-structure-recognition-v1.1-all&quot;</span><span class="p">)</span>
+<span class="c1">#structure_model = TableTransformerForObjectDetection.from_pretrained(&quot;bsmock/TATR-v1.1-Fin&quot;)</span>
+<span class="n">structure_model</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
+
+<div class="viewcode-block" id="MaxResize">
+<a class="viewcode-back" href="../../../../wissenai.extract.tables.html#wissenai.extract.tables.tatr_tsr.MaxResize">[docs]</a>
+<span class="k">class</span> <span class="nc">MaxResize</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">max_size</span><span class="o">=</span><span class="mi">800</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">max_size</span> <span class="o">=</span> <span class="n">max_size</span>
+
+    <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">image</span><span class="p">):</span>
+        <span class="n">width</span><span class="p">,</span> <span class="n">height</span> <span class="o">=</span> <span class="n">image</span><span class="o">.</span><span class="n">size</span>
+        <span class="n">current_max_size</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">width</span><span class="p">,</span> <span class="n">height</span><span class="p">)</span>
+        <span class="n">scale</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_size</span> <span class="o">/</span> <span class="n">current_max_size</span>
+        <span class="n">resized_image</span> <span class="o">=</span> <span class="n">image</span><span class="o">.</span><span class="n">resize</span><span class="p">((</span><span class="nb">int</span><span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="n">scale</span><span class="o">*</span><span class="n">width</span><span class="p">)),</span> <span class="nb">int</span><span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="n">scale</span><span class="o">*</span><span class="n">height</span><span class="p">))))</span>
+        <span class="k">return</span> <span class="n">resized_image</span></div>
+
+
+<div class="viewcode-block" id="CustomPad">
+<a class="viewcode-back" href="../../../../wissenai.extract.tables.html#wissenai.extract.tables.tatr_tsr.CustomPad">[docs]</a>
+<span class="k">class</span> <span class="nc">CustomPad</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">padding</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">10</span><span class="p">),</span> <span class="n">padding_value</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">padding_left</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">padding_top</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">padding_right</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">padding_bottom</span> <span class="o">=</span> <span class="n">padding</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">padding_value</span> <span class="o">=</span> <span class="n">padding_value</span>
+
+    <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">image</span><span class="p">):</span>
+        <span class="n">padded_image</span> <span class="o">=</span> <span class="n">transforms</span><span class="o">.</span><span class="n">functional</span><span class="o">.</span><span class="n">pad</span><span class="p">(</span>
+            <span class="n">image</span><span class="p">,</span>
+            <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">padding_left</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">padding_top</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">padding_right</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">padding_bottom</span><span class="p">),</span>
+            <span class="n">fill</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">padding_value</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">padded_image</span></div>
+
+
+<div class="viewcode-block" id="ResizeAndPad">
+<a class="viewcode-back" href="../../../../wissenai.extract.tables.html#wissenai.extract.tables.tatr_tsr.ResizeAndPad">[docs]</a>
+<span class="k">class</span> <span class="nc">ResizeAndPad</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">max_size</span><span class="o">=</span><span class="mi">800</span><span class="p">,</span> <span class="n">padding</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">10</span><span class="p">),</span> <span class="n">padding_value</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">max_resize</span> <span class="o">=</span> <span class="n">MaxResize</span><span class="p">(</span><span class="n">max_size</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">custom_pad</span> <span class="o">=</span> <span class="n">CustomPad</span><span class="p">(</span><span class="n">padding</span><span class="p">,</span> <span class="n">padding_value</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">image</span><span class="p">):</span>
+        <span class="n">resized_image</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_resize</span><span class="p">(</span><span class="n">image</span><span class="p">)</span>
+        <span class="n">padded_image</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">custom_pad</span><span class="p">(</span><span class="n">resized_image</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">padded_image</span></div>
+
+
+<span class="c1"># Update the transform with padding</span>
+<span class="n">struc_pad_transform</span> <span class="o">=</span> <span class="n">transforms</span><span class="o">.</span><span class="n">Compose</span><span class="p">([</span>
+    <span class="n">ResizeAndPad</span><span class="p">(</span><span class="n">max_size</span><span class="o">=</span><span class="mi">800</span><span class="p">,</span> <span class="n">padding</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">10</span><span class="p">),</span> <span class="n">padding_value</span><span class="o">=</span><span class="mi">0</span><span class="p">),</span>
+    <span class="n">transforms</span><span class="o">.</span><span class="n">ToTensor</span><span class="p">(),</span>
+    <span class="n">transforms</span><span class="o">.</span><span class="n">Normalize</span><span class="p">([</span><span class="mf">0.485</span><span class="p">,</span> <span class="mf">0.456</span><span class="p">,</span> <span class="mf">0.406</span><span class="p">],</span> <span class="p">[</span><span class="mf">0.229</span><span class="p">,</span> <span class="mf">0.224</span><span class="p">,</span> <span class="mf">0.225</span><span class="p">])</span>
+<span class="p">])</span>
+
+<span class="c1">#Without padding</span>
+<div class="viewcode-block" id="create_structure_transform">
+<a class="viewcode-back" href="../../../../wissenai.extract.tables.html#wissenai.extract.tables.tatr_tsr.create_structure_transform">[docs]</a>
+<span class="k">def</span> <span class="nf">create_structure_transform</span><span class="p">(</span><span class="n">max_size</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">transforms</span><span class="o">.</span><span class="n">Compose</span><span class="p">([</span>
+        <span class="n">MaxResize</span><span class="p">(</span><span class="n">max_size</span><span class="p">),</span>
+        <span class="n">transforms</span><span class="o">.</span><span class="n">ToTensor</span><span class="p">(),</span>
+        <span class="n">transforms</span><span class="o">.</span><span class="n">Normalize</span><span class="p">([</span><span class="mf">0.485</span><span class="p">,</span> <span class="mf">0.456</span><span class="p">,</span> <span class="mf">0.406</span><span class="p">],</span> <span class="p">[</span><span class="mf">0.229</span><span class="p">,</span> <span class="mf">0.224</span><span class="p">,</span> <span class="mf">0.225</span><span class="p">])</span>
+    <span class="p">])</span></div>
+
+    
+
+<span class="c1"># structure_transform = # The `transforms.Compose` function is used to chain together a series of</span>
+<span class="c1"># # transformations to be applied to an image. In this specific case:</span>
+<span class="c1"># transforms.Compose([</span>
+<span class="c1">#     MaxResize(600),</span>
+<span class="c1">#     transforms.ToTensor(),</span>
+<span class="c1">#     transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])</span>
+<span class="c1"># ])</span>
+
+<div class="viewcode-block" id="extract_table_struct">
+<a class="viewcode-back" href="../../../../wissenai.extract.tables.html#wissenai.extract.tables.tatr_tsr.extract_table_struct">[docs]</a>
+<span class="k">def</span> <span class="nf">extract_table_struct</span><span class="p">(</span><span class="n">image</span><span class="p">:</span> <span class="n">Image</span><span class="o">.</span><span class="n">Image</span><span class="p">,</span> <span class="n">padding</span><span class="p">:</span><span class="nb">bool</span><span class="p">,</span> <span class="n">max_resize</span><span class="p">:</span><span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">Image</span><span class="o">.</span><span class="n">Image</span><span class="p">,</span><span class="nb">list</span><span class="p">,</span><span class="n">Image</span><span class="o">.</span><span class="n">Image</span><span class="p">]:</span>
+  <span class="k">if</span> <span class="n">padding</span><span class="p">:</span>
+    <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Here to pad&quot;</span><span class="p">)</span>
+    <span class="n">pixel_values</span> <span class="o">=</span> <span class="n">struc_pad_transform</span><span class="p">(</span><span class="n">image</span><span class="p">)</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+  <span class="k">else</span><span class="p">:</span>
+    <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;No padding&quot;</span><span class="p">)</span>
+    <span class="n">structure_transform</span> <span class="o">=</span> <span class="n">create_structure_transform</span><span class="p">(</span><span class="n">max_size</span><span class="o">=</span><span class="n">max_resize</span><span class="p">)</span>
+    <span class="n">pixel_values</span> <span class="o">=</span> <span class="n">structure_transform</span><span class="p">(</span><span class="n">image</span><span class="p">)</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+  <span class="n">pixel_values</span> <span class="o">=</span> <span class="n">pixel_values</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
+  <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">pixel_values</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+  <span class="k">with</span> <span class="n">torch</span><span class="o">.</span><span class="n">no_grad</span><span class="p">():</span>
+    <span class="n">outputs</span> <span class="o">=</span> <span class="n">structure_model</span><span class="p">(</span><span class="n">pixel_values</span><span class="p">)</span>
+  <span class="n">structure_id2label</span> <span class="o">=</span> <span class="n">structure_model</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">id2label</span>
+  <span class="n">structure_id2label</span><span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="n">structure_id2label</span><span class="p">)]</span> <span class="o">=</span> <span class="s2">&quot;no object&quot;</span>
+  <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">image</span><span class="o">.</span><span class="n">size</span><span class="p">)</span>
+  <span class="n">cells</span> <span class="o">=</span> <span class="n">outputs_to_objects</span><span class="p">(</span><span class="n">outputs</span><span class="p">,</span> <span class="n">image</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="n">structure_id2label</span><span class="p">)</span>
+  <span class="k">return</span> <span class="n">cells</span><span class="p">,</span><span class="n">image</span></div>
+
+
+
+<div class="viewcode-block" id="get_cell_coordinates_by_row">
+<a class="viewcode-back" href="../../../../wissenai.extract.tables.html#wissenai.extract.tables.tatr_tsr.get_cell_coordinates_by_row">[docs]</a>
+<span class="k">def</span> <span class="nf">get_cell_coordinates_by_row</span><span class="p">(</span><span class="n">table_data</span><span class="p">):</span>
+    <span class="c1"># Extract rows and columns</span>
+    <span class="n">rows</span> <span class="o">=</span> <span class="p">[</span><span class="n">entry</span> <span class="k">for</span> <span class="n">entry</span> <span class="ow">in</span> <span class="n">table_data</span> <span class="k">if</span> <span class="n">entry</span><span class="p">[</span><span class="s1">&#39;label&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;table row&#39;</span><span class="p">]</span>
+    <span class="n">columns</span> <span class="o">=</span> <span class="p">[</span><span class="n">entry</span> <span class="k">for</span> <span class="n">entry</span> <span class="ow">in</span> <span class="n">table_data</span> <span class="k">if</span> <span class="n">entry</span><span class="p">[</span><span class="s1">&#39;label&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;table column&#39;</span><span class="p">]</span>
+
+    <span class="c1"># Sort rows and columns by their Y and X coordinates, respectively</span>
+    <span class="n">rows</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="p">[</span><span class="s1">&#39;bbox&#39;</span><span class="p">][</span><span class="mi">1</span><span class="p">])</span>
+    <span class="n">columns</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="p">[</span><span class="s1">&#39;bbox&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">])</span>
+
+    <span class="c1"># Function to find cell coordinates</span>
+    <span class="k">def</span> <span class="nf">find_cell_coordinates</span><span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="n">column</span><span class="p">):</span>
+        <span class="n">cell_bbox</span> <span class="o">=</span> <span class="p">[</span><span class="n">column</span><span class="p">[</span><span class="s1">&#39;bbox&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">],</span> <span class="n">row</span><span class="p">[</span><span class="s1">&#39;bbox&#39;</span><span class="p">][</span><span class="mi">1</span><span class="p">],</span> <span class="n">column</span><span class="p">[</span><span class="s1">&#39;bbox&#39;</span><span class="p">][</span><span class="mi">2</span><span class="p">],</span> <span class="n">row</span><span class="p">[</span><span class="s1">&#39;bbox&#39;</span><span class="p">][</span><span class="mi">3</span><span class="p">]]</span>
+        <span class="k">return</span> <span class="n">cell_bbox</span>
+
+    <span class="c1"># Generate cell coordinates and count cells in each row</span>
+    <span class="n">cell_coordinates</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">rows</span><span class="p">:</span>
+        <span class="n">row_cells</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">column</span> <span class="ow">in</span> <span class="n">columns</span><span class="p">:</span>
+            <span class="n">cell_bbox</span> <span class="o">=</span> <span class="n">find_cell_coordinates</span><span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="n">column</span><span class="p">)</span>
+            <span class="n">row_cells</span><span class="o">.</span><span class="n">append</span><span class="p">({</span><span class="s1">&#39;column&#39;</span><span class="p">:</span> <span class="n">column</span><span class="p">[</span><span class="s1">&#39;bbox&#39;</span><span class="p">],</span> <span class="s1">&#39;cell&#39;</span><span class="p">:</span> <span class="n">cell_bbox</span><span class="p">})</span>
+
+        <span class="c1"># Sort cells in the row by X coordinate</span>
+        <span class="n">row_cells</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="p">[</span><span class="s1">&#39;column&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">])</span>
+
+        <span class="c1"># Append row information to cell_coordinates</span>
+        <span class="n">cell_coordinates</span><span class="o">.</span><span class="n">append</span><span class="p">({</span><span class="s1">&#39;row&#39;</span><span class="p">:</span> <span class="n">row</span><span class="p">[</span><span class="s1">&#39;bbox&#39;</span><span class="p">],</span> <span class="s1">&#39;cells&#39;</span><span class="p">:</span> <span class="n">row_cells</span><span class="p">,</span> <span class="s1">&#39;cell_count&#39;</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">row_cells</span><span class="p">)})</span>
+
+    <span class="c1"># Sort rows from top to bottom</span>
+    <span class="n">cell_coordinates</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="p">[</span><span class="s1">&#39;row&#39;</span><span class="p">][</span><span class="mi">1</span><span class="p">])</span>
+
+    <span class="k">return</span> <span class="n">cell_coordinates</span></div>
+
+
+<span class="c1">#reader = easyocr.Reader([&#39;en&#39;]) </span>
+<span class="n">ocr</span> <span class="o">=</span> <span class="n">PaddleOCR</span><span class="p">(</span><span class="n">use_angle_cls</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">lang</span><span class="o">=</span><span class="s1">&#39;en&#39;</span><span class="p">)</span>
+
+<div class="viewcode-block" id="apply_ocr">
+<a class="viewcode-back" href="../../../../wissenai.extract.tables.html#wissenai.extract.tables.tatr_tsr.apply_ocr">[docs]</a>
+<span class="k">def</span> <span class="nf">apply_ocr</span><span class="p">(</span><span class="n">cell_coordinates</span><span class="p">,</span><span class="n">orig_img</span><span class="p">):</span>
+    <span class="c1"># let&#39;s OCR row by row</span>
+    <span class="n">data</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+    <span class="n">max_num_columns</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">row</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">tqdm</span><span class="p">(</span><span class="n">cell_coordinates</span><span class="p">)):</span>
+      <span class="n">row_text</span> <span class="o">=</span> <span class="p">[]</span>
+      <span class="k">for</span> <span class="n">cell</span> <span class="ow">in</span> <span class="n">row</span><span class="p">[</span><span class="s2">&quot;cells&quot;</span><span class="p">]:</span>
+        <span class="c1"># crop cell out of image</span>
+        <span class="n">cell_image</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">orig_img</span><span class="o">.</span><span class="n">crop</span><span class="p">(</span><span class="n">cell</span><span class="p">[</span><span class="s2">&quot;cell&quot;</span><span class="p">]))</span>
+        <span class="c1"># apply OCR</span>
+        <span class="c1"># result = reader.readtext(np.array(cell_image))</span>
+        <span class="c1"># if len(result) &gt; 0:</span>
+        <span class="c1">#   # print([x[1] for x in list(result)])</span>
+        <span class="c1">#   text = &quot; &quot;.join([x[1] for x in result])</span>
+        <span class="c1">#   row_text.append(text)</span>
+        
+        <span class="n">result</span> <span class="o">=</span> <span class="n">ocr</span><span class="o">.</span><span class="n">ocr</span><span class="p">(</span><span class="n">cell_image</span><span class="p">,</span> <span class="bp">cls</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">word</span> <span class="o">=</span> <span class="p">[</span><span class="n">line</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">res</span> <span class="ow">in</span> <span class="n">result</span> <span class="k">if</span> <span class="n">res</span> <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">res</span><span class="p">]</span>
+        <span class="n">text</span> <span class="o">=</span> <span class="s1">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">word</span><span class="p">)</span>
+        
+        <span class="n">row_text</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
+
+      <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">row_text</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">max_num_columns</span><span class="p">:</span>
+        <span class="n">max_num_columns</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">row_text</span><span class="p">)</span>
+
+      <span class="n">data</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="o">=</span> <span class="n">row_text</span>
+
+    <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Max number of columns:&quot;</span><span class="p">,</span> <span class="n">max_num_columns</span><span class="p">)</span>
+
+    <span class="c1"># pad rows which don&#39;t have max_num_columns elements</span>
+    <span class="c1"># to make sure all rows have the same number of columns</span>
+    <span class="k">for</span> <span class="n">row</span><span class="p">,</span> <span class="n">row_data</span> <span class="ow">in</span> <span class="n">data</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">row_data</span><span class="p">)</span> <span class="o">!=</span> <span class="n">max_num_columns</span><span class="p">:</span>
+            <span class="n">row_data</span> <span class="o">=</span> <span class="n">row_data</span> <span class="o">+</span> <span class="p">[</span><span class="s2">&quot;&quot;</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">max_num_columns</span> <span class="o">-</span> <span class="nb">len</span><span class="p">(</span><span class="n">row_data</span><span class="p">))]</span>
+        <span class="n">data</span><span class="p">[</span><span class="n">row</span><span class="p">]</span> <span class="o">=</span> <span class="n">row_data</span>
+
+    <span class="k">return</span> <span class="n">data</span></div>
+
+
+
+<div class="viewcode-block" id="plot_results">
+<a class="viewcode-back" href="../../../../wissenai.extract.tables.html#wissenai.extract.tables.tatr_tsr.plot_results">[docs]</a>
+<span class="k">def</span> <span class="nf">plot_results</span><span class="p">(</span><span class="n">cells</span><span class="p">,</span> <span class="n">class_to_visualize</span><span class="p">,</span> <span class="n">orig_img</span><span class="p">,</span> <span class="n">visualize_path</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">class_to_visualize</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">structure_model</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">id2label</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Class should be one of the available classes&quot;</span><span class="p">)</span>
+
+    <span class="c1"># Create a figure and axis but do not show the plot</span>
+    <span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">16</span><span class="p">,</span><span class="mi">10</span><span class="p">))</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">orig_img</span><span class="p">,</span> <span class="n">interpolation</span><span class="o">=</span><span class="s2">&quot;lanczos&quot;</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">cell</span> <span class="ow">in</span> <span class="n">cells</span><span class="p">:</span>
+        <span class="n">score</span> <span class="o">=</span> <span class="n">cell</span><span class="p">[</span><span class="s2">&quot;score&quot;</span><span class="p">]</span>
+        <span class="n">bbox</span> <span class="o">=</span> <span class="n">cell</span><span class="p">[</span><span class="s2">&quot;bbox&quot;</span><span class="p">]</span>
+        <span class="n">label</span> <span class="o">=</span> <span class="n">cell</span><span class="p">[</span><span class="s2">&quot;label&quot;</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="n">label</span> <span class="o">==</span> <span class="n">class_to_visualize</span><span class="p">:</span>
+            <span class="n">xmin</span><span class="p">,</span> <span class="n">ymin</span><span class="p">,</span> <span class="n">xmax</span><span class="p">,</span> <span class="n">ymax</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">bbox</span><span class="p">)</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">add_patch</span><span class="p">(</span><span class="n">plt</span><span class="o">.</span><span class="n">Rectangle</span><span class="p">((</span><span class="n">xmin</span><span class="p">,</span> <span class="n">ymin</span><span class="p">),</span> <span class="n">xmax</span> <span class="o">-</span> <span class="n">xmin</span><span class="p">,</span> <span class="n">ymax</span> <span class="o">-</span> <span class="n">ymin</span><span class="p">,</span> <span class="n">fill</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;green&quot;</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mi">1</span><span class="p">))</span>
+            <span class="n">text</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">cell</span><span class="p">[</span><span class="s2">&quot;label&quot;</span><span class="p">]</span><span class="si">}</span><span class="s1">: </span><span class="si">{</span><span class="n">score</span><span class="si">:</span><span class="s1">0.2f</span><span class="si">}</span><span class="s1">&#39;</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="n">xmin</span><span class="p">,</span> <span class="n">ymin</span><span class="p">,</span> <span class="n">text</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">bbox</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">facecolor</span><span class="o">=</span><span class="s1">&#39;yellow&#39;</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.5</span><span class="p">))</span>
+
+    <span class="n">plt</span><span class="o">.</span><span class="n">axis</span><span class="p">(</span><span class="s1">&#39;off&#39;</span><span class="p">)</span>  <span class="c1"># Hide the axis</span>
+    <span class="c1"># plt.tight_layout()  # Optional: Adjust the layout to avoid clipping</span>
+
+    <span class="c1"># Save the figure</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">visualize_path</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">close</span><span class="p">(</span><span class="n">fig</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="tsr_inference">
+<a class="viewcode-back" href="../../../../wissenai.extract.tables.html#wissenai.extract.tables.tatr_tsr.tsr_inference">[docs]</a>
+<span class="k">def</span> <span class="nf">tsr_inference</span><span class="p">(</span><span class="n">input_img_path</span><span class="p">:</span><span class="nb">str</span><span class="p">,</span> <span class="n">output_csv_path</span><span class="p">:</span><span class="nb">str</span><span class="p">,</span><span class="n">max_resize</span><span class="p">:</span><span class="nb">int</span><span class="p">,</span> <span class="n">visualize</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span> <span class="n">visualize_path</span><span class="p">:</span><span class="nb">str</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Function performs inferencing of images containing tables for table structure recognition using the </span>
+<span class="sd">    table transformer for structure recognition model</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        input_img_path (str): Path to the input image</span>
+<span class="sd">        output_csv_path (str): Path where the reconstructed output csv file has to be stored</span>
+<span class="sd">        max_resize(int): Max resize value for the image, Standard value is 800</span>
+<span class="sd">        visualize (bool): Whether the bounding boxes have to be visualized or not</span>
+<span class="sd">        visualize_path (str): If bounding boxes have to be visualized, pass the path where the visualized images </span>
+<span class="sd">        have to be saved</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">file_path</span> <span class="o">=</span> <span class="n">input_img_path</span>
+    <span class="n">image</span> <span class="o">=</span> <span class="n">Image</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">file_path</span><span class="p">)</span><span class="o">.</span><span class="n">convert</span><span class="p">(</span><span class="s2">&quot;RGB&quot;</span><span class="p">)</span>
+    <span class="n">cells</span><span class="p">,</span> <span class="n">orig_img</span> <span class="o">=</span> <span class="n">extract_table_struct</span><span class="p">(</span><span class="n">image</span><span class="p">,</span> <span class="kc">False</span><span class="p">,</span><span class="n">max_resize</span><span class="p">)</span> 
+    
+    <span class="c1">#visualize rows</span>
+    <span class="k">if</span> <span class="n">visualize</span><span class="p">:</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Going to visualize the tsr extraction for </span><span class="si">{</span><span class="n">visualize_path</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="n">plot_results</span><span class="p">(</span><span class="n">cells</span><span class="p">,</span> <span class="n">class_to_visualize</span><span class="o">=</span><span class="s2">&quot;table row&quot;</span><span class="p">,</span><span class="n">orig_img</span><span class="o">=</span><span class="n">orig_img</span><span class="p">,</span><span class="n">visualize_path</span><span class="o">=</span><span class="n">visualize_path</span><span class="p">)</span>
+    
+    <span class="c1">#get coordinates of each cell</span>
+    <span class="n">cell_coordinates</span> <span class="o">=</span> <span class="n">get_cell_coordinates_by_row</span><span class="p">(</span><span class="n">cells</span><span class="p">)</span>
+    
+    <span class="c1">#apply OCR for each cell</span>
+    <span class="n">data</span> <span class="o">=</span> <span class="n">apply_ocr</span><span class="p">(</span><span class="n">cell_coordinates</span><span class="p">,</span><span class="n">orig_img</span><span class="p">)</span>
+    <span class="c1">#create csv in specified path</span>
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">output_csv_path</span><span class="p">,</span><span class="s1">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">result_file</span><span class="p">:</span>
+        <span class="n">wr</span> <span class="o">=</span> <span class="n">csv</span><span class="o">.</span><span class="n">writer</span><span class="p">(</span><span class="n">result_file</span><span class="p">,</span> <span class="n">dialect</span><span class="o">=</span><span class="s1">&#39;excel&#39;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">row</span><span class="p">,</span> <span class="n">row_text</span> <span class="ow">in</span> <span class="n">data</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">wr</span><span class="o">.</span><span class="n">writerow</span><span class="p">(</span><span class="n">row_text</span><span class="p">)</span>
+    <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;Done writing CSV file&#39;</span><span class="p">)</span></div>
+
+
+
+
+<div class="viewcode-block" id="main">
+<a class="viewcode-back" href="../../../../wissenai.extract.tables.html#wissenai.extract.tables.tatr_tsr.main">[docs]</a>
+<span class="k">def</span> <span class="nf">main</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="n">logging</span><span class="o">.</span><span class="n">basicConfig</span><span class="p">(</span>
+        <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
+        <span class="nb">format</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">%(asctime)s</span><span class="s2"> </span><span class="si">%(levelname)s</span><span class="s2"> </span><span class="si">%(message)s</span><span class="s2">&quot;</span><span class="p">,</span>
+        <span class="n">datefmt</span><span class="o">=</span><span class="s2">&quot;%Y-%m-</span><span class="si">%d</span><span class="s2"> %H:%M:%S&quot;</span><span class="p">,</span>
+        <span class="n">filename</span><span class="o">=</span><span class="s2">&quot;basic_tsr.log&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">input_dir</span> <span class="o">=</span> <span class="s1">&#39;/shared_disk/nidhin/Snowman3/New_invdata/manual_crop_img&#39;</span>
+    <span class="n">output_dir</span> <span class="o">=</span> <span class="s1">&#39;/shared_disk/nidhin/Snowman3/New_invdata/tsr_results&#39;</span>
+    <span class="n">visualize_dir</span> <span class="o">=</span> <span class="s1">&#39;/shared_disk/nidhin/Snowman3/New_invdata/tsr_visualized&#39;</span>
+    
+    <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Before loop&quot;</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">file</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">listdir</span><span class="p">(</span><span class="n">input_dir</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">file</span><span class="o">.</span><span class="n">endswith</span><span class="p">((</span><span class="s2">&quot;.jpg&quot;</span><span class="p">,</span> <span class="s2">&quot;.png&quot;</span><span class="p">)):</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Inferencing for file </span><span class="si">{</span><span class="n">file</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+                <span class="n">file_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">input_dir</span><span class="p">,</span><span class="n">file</span><span class="p">)</span>
+                <span class="n">output_file_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">output_dir</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">file</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;.&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2">.csv&quot;</span><span class="p">)</span> 
+                <span class="n">tsr_inference</span><span class="p">(</span><span class="n">file_path</span><span class="p">,</span><span class="n">output_file_path</span><span class="p">,</span><span class="mi">1000</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">visualize_dir</span><span class="p">,</span><span class="n">file</span><span class="p">)</span> <span class="p">)</span>
+            <span class="k">except</span> <span class="ne">IOError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="n">logging</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;An IO error occurred while saving the image: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="n">logging</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;An error occurred while saving the image: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span></div>
+
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+    <span class="n">main</span><span class="p">()</span>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Wissen.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

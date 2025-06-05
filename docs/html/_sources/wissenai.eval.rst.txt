@@ -1,0 +1,21 @@
+wissenai.eval package
+=====================
+
+Submodules
+----------
+
+wissenai.eval.llm\_eval module
+------------------------------
+
+.. automodule:: wissenai.eval.llm_eval
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Module contents
+---------------
+
+.. automodule:: wissenai.eval
+   :members:
+   :undoc-members:
+   :show-inheritance:

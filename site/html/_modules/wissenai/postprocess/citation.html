@@ -1,0 +1,1136 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>wissenai.postprocess.citation &mdash; Doc AI Studio 1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=29a6c3e3"></script>
+      <script src="../../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            Doc AI Studio
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules.html">wissenai</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">Doc AI Studio</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">wissenai.postprocess.citation</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for wissenai.postprocess.citation</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">json</span>
+<span class="kn">import</span> <span class="nn">fitz</span>  <span class="c1"># PyMuPDF</span>
+<span class="kn">import</span> <span class="nn">pytesseract</span>
+<span class="kn">from</span> <span class="nn">PIL</span> <span class="kn">import</span> <span class="n">Image</span>
+<span class="kn">import</span> <span class="nn">io</span><span class="o">,</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">re</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">scipy.spatial</span> <span class="kn">import</span> <span class="n">distance</span>
+<span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">defaultdict</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">List</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Tuple</span>
+<span class="kn">import</span> <span class="nn">uuid</span>
+<span class="kn">import</span> <span class="nn">heapq</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+<span class="kn">import</span> <span class="nn">matplotlib.patches</span> <span class="k">as</span> <span class="nn">patches</span>
+<span class="kn">from</span> <span class="nn">paddleocr</span> <span class="kn">import</span> <span class="n">PaddleOCR</span>
+<span class="kn">import</span> <span class="nn">easyocr</span>
+<span class="kn">from</span> <span class="nn">fuzzywuzzy</span> <span class="kn">import</span> <span class="n">fuzz</span>  <span class="c1"># For fuzzy matching</span>
+<span class="kn">import</span> <span class="nn">cv2</span>  <span class="c1"># OpenCV for image preprocessing</span>
+
+<div class="viewcode-block" id="PDFCitationEngine">
+<a class="viewcode-back" href="../../../wissenai.postprocess.html#wissenai.postprocess.citation.PDFCitationEngine">[docs]</a>
+<span class="k">class</span> <span class="nc">PDFCitationEngine</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;A class to extract and match fields and values from PDFs, generating citations with bounding boxes.</span>
+
+<span class="sd">    Supports both searchable and scanned PDFs using text extraction and OCR engines (Tesseract, PaddleOCR, EasyOCR).</span>
+<span class="sd">    Matches fields and values using fuzzy matching and spatial analysis, and saves images of matched regions.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> 
+                 <span class="n">max_distance_ratio</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.5</span><span class="p">,</span>
+                 <span class="n">ocr_config</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;--psm 6&#39;</span><span class="p">,</span>
+                 <span class="n">paragraph_threshold</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.2</span><span class="p">,</span>
+                 <span class="n">min_ocr_confidence</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">60</span><span class="p">,</span>
+                 <span class="n">output_image_dir</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;output_images&quot;</span><span class="p">,</span>
+                 <span class="n">max_edge_distance</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">150.0</span><span class="p">,</span>
+                 <span class="n">crop_padding</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">10.0</span><span class="p">,</span>
+                 <span class="n">ocr_engines</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;tesseract&quot;</span><span class="p">,</span> <span class="s2">&quot;paddleocr&quot;</span><span class="p">,</span> <span class="s2">&quot;easyocr&quot;</span><span class="p">],</span>
+                 <span class="n">ocr_priority</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;tesseract&quot;</span><span class="p">,</span> <span class="s2">&quot;paddleocr&quot;</span><span class="p">,</span> <span class="s2">&quot;easyocr&quot;</span><span class="p">]):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize the PDFCitationEngine with configuration parameters.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            max_distance_ratio (float): Maximum distance ratio for spatial relationships (currently unused).</span>
+<span class="sd">            ocr_config (str): Tesseract OCR configuration (e.g., &#39;--psm 6&#39;).</span>
+<span class="sd">            paragraph_threshold (float): Vertical gap threshold for grouping text blocks into paragraphs.</span>
+<span class="sd">            min_ocr_confidence (int): Minimum confidence score for OCR results (0-100).</span>
+<span class="sd">            output_image_dir (str): Directory to save output images.</span>
+<span class="sd">            max_edge_distance (float): Maximum distance for edges in the spatial graph.</span>
+<span class="sd">            crop_padding (float): Padding around bounding boxes for image cropping.</span>
+<span class="sd">            ocr_engines (List[str]): List of OCR engines to use (&quot;tesseract&quot;, &quot;paddleocr&quot;, &quot;easyocr&quot;).</span>
+<span class="sd">            ocr_priority (List[str]): Priority order for OCR engines.</span>
+
+<span class="sd">        Attributes:</span>
+<span class="sd">            field_patterns (defaultdict): Stores alternative patterns for field matching.</span>
+<span class="sd">            ocr_instances (dict): Initialized OCR engine instances.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">max_distance_ratio</span> <span class="o">=</span> <span class="n">max_distance_ratio</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ocr_config</span> <span class="o">=</span> <span class="n">ocr_config</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">paragraph_threshold</span> <span class="o">=</span> <span class="n">paragraph_threshold</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">min_ocr_confidence</span> <span class="o">=</span> <span class="n">min_ocr_confidence</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">field_patterns</span> <span class="o">=</span> <span class="n">defaultdict</span><span class="p">(</span><span class="nb">list</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">output_image_dir</span> <span class="o">=</span> <span class="n">output_image_dir</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">max_edge_distance</span> <span class="o">=</span> <span class="n">max_edge_distance</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">crop_padding</span> <span class="o">=</span> <span class="n">crop_padding</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ocr_engines</span> <span class="o">=</span> <span class="n">ocr_engines</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ocr_priority</span> <span class="o">=</span> <span class="n">ocr_priority</span>
+        
+        <span class="c1"># Initialize OCR engines</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ocr_instances</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">if</span> <span class="s2">&quot;tesseract&quot;</span> <span class="ow">in</span> <span class="n">ocr_engines</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">ocr_instances</span><span class="p">[</span><span class="s2">&quot;tesseract&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">pytesseract</span>
+        <span class="k">if</span> <span class="s2">&quot;paddleocr&quot;</span> <span class="ow">in</span> <span class="n">ocr_engines</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">ocr_instances</span><span class="p">[</span><span class="s2">&quot;paddleocr&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">PaddleOCR</span><span class="p">(</span><span class="n">use_angle_cls</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">lang</span><span class="o">=</span><span class="s1">&#39;en&#39;</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Warning: Failed to initialize PaddleOCR: </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="s2">&quot;easyocr&quot;</span> <span class="ow">in</span> <span class="n">ocr_engines</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">ocr_instances</span><span class="p">[</span><span class="s2">&quot;easyocr&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">easyocr</span><span class="o">.</span><span class="n">Reader</span><span class="p">([</span><span class="s1">&#39;en&#39;</span><span class="p">],</span> <span class="n">gpu</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Warning: Failed to initialize EasyOCR: </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        
+        <span class="c1"># Create output directory</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">output_image_dir</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        
+<div class="viewcode-block" id="PDFCitationEngine.add_field_pattern">
+<a class="viewcode-back" href="../../../wissenai.postprocess.html#wissenai.postprocess.citation.PDFCitationEngine.add_field_pattern">[docs]</a>
+    <span class="k">def</span> <span class="nf">add_field_pattern</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">field_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">patterns</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Add alternative patterns for matching a field name.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            field_name (str): The field name to associate patterns with.</span>
+<span class="sd">            patterns (List[str]): List of regex patterns for matching the field.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">field_patterns</span><span class="p">[</span><span class="n">field_name</span><span class="p">]</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">patterns</span><span class="p">)</span></div>
+
+        
+    <span class="k">def</span> <span class="nf">_preprocess_image</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">image</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">engine_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Preprocess an image for OCR with rotation correction and contrast enhancement.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            image (np.ndarray): Input image as a NumPy array (RGB).</span>
+<span class="sd">            engine_name (str): Name of the OCR engine (&quot;tesseract&quot;, &quot;paddleocr&quot;, &quot;easyocr&quot;).</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            np.ndarray: Preprocessed image (grayscale or binary).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">gray</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">cvtColor</span><span class="p">(</span><span class="n">image</span><span class="p">,</span> <span class="n">cv2</span><span class="o">.</span><span class="n">COLOR_RGB2GRAY</span><span class="p">)</span>
+        <span class="n">clahe</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">createCLAHE</span><span class="p">(</span><span class="n">clipLimit</span><span class="o">=</span><span class="mf">2.0</span><span class="p">,</span> <span class="n">tileGridSize</span><span class="o">=</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span> <span class="mi">8</span><span class="p">))</span>
+        <span class="n">contrast</span> <span class="o">=</span> <span class="n">clahe</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="n">gray</span><span class="p">)</span>
+        <span class="n">blurred</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">GaussianBlur</span><span class="p">(</span><span class="n">contrast</span><span class="p">,</span> <span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">3</span><span class="p">),</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="n">edges</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">Canny</span><span class="p">(</span><span class="n">blurred</span><span class="p">,</span> <span class="mi">50</span><span class="p">,</span> <span class="mi">150</span><span class="p">,</span> <span class="n">apertureSize</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
+        <span class="n">lines</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">HoughLines</span><span class="p">(</span><span class="n">edges</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">/</span> <span class="mi">180</span><span class="p">,</span> <span class="mi">200</span><span class="p">)</span>
+        <span class="n">angle</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">if</span> <span class="n">lines</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">angles</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">rho</span><span class="p">,</span> <span class="n">theta</span> <span class="ow">in</span> <span class="n">lines</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]:</span>
+                <span class="n">angle_rad</span> <span class="o">=</span> <span class="n">theta</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">/</span> <span class="mi">2</span>
+                <span class="n">angle_deg</span> <span class="o">=</span> <span class="n">angle_rad</span> <span class="o">*</span> <span class="mi">180</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span>
+                <span class="k">if</span> <span class="o">-</span><span class="mi">45</span> <span class="o">&lt;=</span> <span class="n">angle_deg</span> <span class="o">&lt;=</span> <span class="mi">45</span><span class="p">:</span>
+                    <span class="n">angles</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">angle_deg</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">angles</span><span class="p">:</span>
+                <span class="n">angle</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">median</span><span class="p">(</span><span class="n">angles</span><span class="p">)</span>
+                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Detected rotation angle: </span><span class="si">{</span><span class="n">angle</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2"> degrees&quot;</span><span class="p">)</span>
+        
+        <span class="k">if</span> <span class="nb">abs</span><span class="p">(</span><span class="n">angle</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mf">0.1</span><span class="p">:</span>
+            <span class="p">(</span><span class="n">h</span><span class="p">,</span> <span class="n">w</span><span class="p">)</span> <span class="o">=</span> <span class="n">blurred</span><span class="o">.</span><span class="n">shape</span><span class="p">[:</span><span class="mi">2</span><span class="p">]</span>
+            <span class="n">center</span> <span class="o">=</span> <span class="p">(</span><span class="n">w</span> <span class="o">//</span> <span class="mi">2</span><span class="p">,</span> <span class="n">h</span> <span class="o">//</span> <span class="mi">2</span><span class="p">)</span>
+            <span class="n">M</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">getRotationMatrix2D</span><span class="p">(</span><span class="n">center</span><span class="p">,</span> <span class="n">angle</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">)</span>
+            <span class="n">rotated</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">warpAffine</span><span class="p">(</span><span class="n">blurred</span><span class="p">,</span> <span class="n">M</span><span class="p">,</span> <span class="p">(</span><span class="n">w</span><span class="p">,</span> <span class="n">h</span><span class="p">),</span> <span class="n">flags</span><span class="o">=</span><span class="n">cv2</span><span class="o">.</span><span class="n">INTER_CUBIC</span><span class="p">,</span> <span class="n">borderMode</span><span class="o">=</span><span class="n">cv2</span><span class="o">.</span><span class="n">BORDER_REPLICATE</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">rotated</span> <span class="o">=</span> <span class="n">blurred</span>
+        
+        <span class="k">if</span> <span class="n">engine_name</span> <span class="o">==</span> <span class="s2">&quot;tesseract&quot;</span><span class="p">:</span>
+            <span class="n">binary</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">adaptiveThreshold</span><span class="p">(</span>
+                <span class="n">rotated</span><span class="p">,</span> <span class="mi">255</span><span class="p">,</span> <span class="n">cv2</span><span class="o">.</span><span class="n">ADAPTIVE_THRESH_GAUSSIAN_C</span><span class="p">,</span> <span class="n">cv2</span><span class="o">.</span><span class="n">THRESH_BINARY</span><span class="p">,</span> <span class="mi">11</span><span class="p">,</span> <span class="mi">2</span>
+            <span class="p">)</span>
+            <span class="k">return</span> <span class="n">binary</span>
+        <span class="k">return</span> <span class="n">rotated</span>
+    
+<div class="viewcode-block" id="PDFCitationEngine.process_pdf">
+<a class="viewcode-back" href="../../../wissenai.postprocess.html#wissenai.postprocess.citation.PDFCitationEngine.process_pdf">[docs]</a>
+    <span class="k">def</span> <span class="nf">process_pdf</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pdf_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">input_json</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Process a PDF to match fields and values, generating citations with bounding boxes.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            pdf_path (str): Path to the PDF file.</span>
+<span class="sd">            input_json (List[Dict]): JSON structure with companies, fields, and expected values.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            List[Dict]: Results with company names, fields, and citations (bounding boxes, confidence, etc.).</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            Exception: If the PDF cannot be opened or processed.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">results</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">doc</span> <span class="o">=</span> <span class="n">fitz</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">pdf_path</span><span class="p">)</span>
+        <span class="n">all_text_blocks</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_extract_and_group_text_blocks</span><span class="p">(</span><span class="n">doc</span><span class="p">)</span>
+        
+        <span class="k">for</span> <span class="n">company_entry</span> <span class="ow">in</span> <span class="n">input_json</span><span class="p">:</span>
+            <span class="n">company_name</span> <span class="o">=</span> <span class="n">company_entry</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;company&quot;</span><span class="p">,</span> <span class="s2">&quot;Unknown_Company&quot;</span><span class="p">)</span>
+            <span class="n">company_fields</span> <span class="o">=</span> <span class="n">company_entry</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;fields&quot;</span><span class="p">,</span> <span class="n">company_entry</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;fileds&quot;</span><span class="p">,</span> <span class="p">[]))</span>
+            
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">company_fields</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Warning: No fields found for company &#39;</span><span class="si">{</span><span class="n">company_name</span><span class="si">}</span><span class="s2">&#39;&quot;</span><span class="p">)</span>
+                <span class="n">results</span><span class="o">.</span><span class="n">append</span><span class="p">({</span>
+                    <span class="s2">&quot;company&quot;</span><span class="p">:</span> <span class="n">company_name</span><span class="p">,</span>
+                    <span class="s2">&quot;fields&quot;</span><span class="p">:</span> <span class="p">[]</span>
+                <span class="p">})</span>
+                <span class="k">continue</span>
+                
+            <span class="n">company_result</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="s2">&quot;company&quot;</span><span class="p">:</span> <span class="n">company_name</span><span class="p">,</span>
+                <span class="s2">&quot;fields&quot;</span><span class="p">:</span> <span class="p">[]</span>
+            <span class="p">}</span>
+            
+            <span class="k">for</span> <span class="n">entry</span> <span class="ow">in</span> <span class="n">company_fields</span><span class="p">:</span>
+                <span class="n">unique_field_id</span> <span class="o">=</span> <span class="n">entry</span><span class="p">[</span><span class="s2">&quot;unique_filed_id&quot;</span><span class="p">]</span>
+                <span class="n">field_name</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span><span class="n">k</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">entry</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span> <span class="k">if</span> <span class="n">k</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;unique_filed_id&quot;</span><span class="p">,</span> <span class="s2">&quot;page_number&quot;</span><span class="p">])</span>
+                <span class="n">target_value</span> <span class="o">=</span> <span class="n">entry</span><span class="p">[</span><span class="n">field_name</span><span class="p">]</span>
+                <span class="n">page_numbers_str</span> <span class="o">=</span> <span class="n">entry</span><span class="p">[</span><span class="s2">&quot;page_number&quot;</span><span class="p">]</span>
+                
+                <span class="c1"># Initialize field result with all original keys plus citation</span>
+                <span class="n">field_result</span> <span class="o">=</span> <span class="n">entry</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+                <span class="n">field_result</span><span class="p">[</span><span class="s2">&quot;citation&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+                
+                <span class="n">page_numbers</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">page_nums</span> <span class="o">=</span> <span class="p">[</span><span class="n">p</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">page_numbers_str</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;,&quot;</span><span class="p">)</span> <span class="k">if</span> <span class="n">p</span><span class="o">.</span><span class="n">strip</span><span class="p">()]</span>
+                    <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">page_nums</span><span class="p">:</span>
+                        <span class="n">num</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">p</span><span class="p">)</span>
+                        <span class="k">if</span> <span class="n">num</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                            <span class="n">page_numbers</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">num</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+                        <span class="k">else</span><span class="p">:</span>
+                            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Warning: Invalid page number &#39;</span><span class="si">{</span><span class="n">p</span><span class="si">}</span><span class="s2">&#39; for </span><span class="si">{</span><span class="n">field_name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="k">except</span> <span class="ne">ValueError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Warning: Invalid page number format &#39;</span><span class="si">{</span><span class="n">page_numbers_str</span><span class="si">}</span><span class="s2">&#39; for </span><span class="si">{</span><span class="n">field_name</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                    <span class="n">company_result</span><span class="p">[</span><span class="s2">&quot;fields&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">field_result</span><span class="p">)</span>
+                    <span class="k">continue</span>
+                
+                <span class="c1"># Track value candidates to retrieve is_paragraph for the highest-confidence citation</span>
+                <span class="n">value_candidates_dict</span> <span class="o">=</span> <span class="p">{}</span>
+                
+                <span class="k">for</span> <span class="n">page_num</span> <span class="ow">in</span> <span class="n">page_numbers</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">page_num</span> <span class="o">&gt;=</span> <span class="nb">len</span><span class="p">(</span><span class="n">doc</span><span class="p">):</span>
+                        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Warning: Page </span><span class="si">{</span><span class="n">page_num</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="si">}</span><span class="s2"> does not exist&quot;</span><span class="p">)</span>
+                        <span class="k">continue</span>
+                        
+                    <span class="n">page</span> <span class="o">=</span> <span class="n">doc</span><span class="p">[</span><span class="n">page_num</span><span class="p">]</span>
+                    <span class="n">page_rect</span> <span class="o">=</span> <span class="n">page</span><span class="o">.</span><span class="n">rect</span>
+                    <span class="n">page_width</span> <span class="o">=</span> <span class="n">page_rect</span><span class="o">.</span><span class="n">width</span>
+                    <span class="n">page_height</span> <span class="o">=</span> <span class="n">page_rect</span><span class="o">.</span><span class="n">height</span>
+                    
+                    <span class="n">page_text</span> <span class="o">=</span> <span class="n">page</span><span class="o">.</span><span class="n">get_text</span><span class="p">()</span>
+                    <span class="n">page_type</span> <span class="o">=</span> <span class="s2">&quot;searchable&quot;</span> <span class="k">if</span> <span class="n">page_text</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="k">else</span> <span class="s2">&quot;scanned&quot;</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Processing page </span><span class="si">{</span><span class="n">page_num</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">page_type</span><span class="si">}</span><span class="s2"> PDF&quot;</span><span class="p">)</span>
+                    
+                    <span class="n">page_blocks</span> <span class="o">=</span> <span class="p">[</span><span class="n">block</span> <span class="k">for</span> <span class="n">block</span> <span class="ow">in</span> <span class="n">all_text_blocks</span> <span class="k">if</span> <span class="n">block</span><span class="p">[</span><span class="s1">&#39;page&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="n">page_num</span><span class="p">]</span>
+                    <span class="k">if</span> <span class="ow">not</span> <span class="n">page_blocks</span><span class="p">:</span>
+                        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Warning: No text blocks found on page </span><span class="si">{</span><span class="n">page_num</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                        <span class="k">continue</span>
+                    
+                    <span class="n">field_candidates</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_find_field_candidates</span><span class="p">(</span><span class="n">field_name</span><span class="p">,</span> <span class="n">page_blocks</span><span class="p">)</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Field &#39;</span><span class="si">{</span><span class="n">field_name</span><span class="si">}</span><span class="s2">&#39; on page </span><span class="si">{</span><span class="n">page_num</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">field_candidates</span><span class="p">)</span><span class="si">}</span><span class="s2"> candidates&quot;</span><span class="p">)</span>
+                    
+                    <span class="n">value_candidates</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_find_value_candidates</span><span class="p">(</span><span class="n">target_value</span><span class="p">,</span> <span class="n">page_blocks</span><span class="p">,</span> <span class="n">page_width</span><span class="p">)</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Value &#39;</span><span class="si">{</span><span class="n">target_value</span><span class="p">[:</span><span class="mi">50</span><span class="p">]</span><span class="si">}</span><span class="s2">...&#39; on page </span><span class="si">{</span><span class="n">page_num</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">value_candidates</span><span class="p">)</span><span class="si">}</span><span class="s2"> candidates&quot;</span><span class="p">)</span>
+                    
+                    <span class="n">graph</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_build_spatial_graph</span><span class="p">(</span><span class="n">page_blocks</span><span class="p">,</span> <span class="n">page_width</span><span class="p">,</span> <span class="n">page_height</span><span class="p">)</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_save_graph_image</span><span class="p">(</span><span class="n">graph</span><span class="p">,</span> <span class="n">page_blocks</span><span class="p">,</span> <span class="n">page_width</span><span class="p">,</span> <span class="n">page_height</span><span class="p">,</span> <span class="n">page_num</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+                    
+                    <span class="n">match</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_find_optimal_pairing_graph</span><span class="p">(</span>
+                        <span class="n">field_candidates</span><span class="p">,</span> 
+                        <span class="n">value_candidates</span><span class="p">,</span>
+                        <span class="n">graph</span><span class="p">,</span>
+                        <span class="n">page_width</span><span class="p">,</span>
+                        <span class="n">page_height</span>
+                    <span class="p">)</span>
+                    
+                    <span class="n">has_complete_match</span> <span class="o">=</span> <span class="nb">any</span><span class="p">(</span>
+                        <span class="n">cand</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;is_complete&quot;</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span> <span class="k">for</span> <span class="n">cand</span> <span class="ow">in</span> <span class="n">value_candidates</span>
+                    <span class="p">)</span>
+                    
+                    <span class="k">for</span> <span class="n">value_candidate</span> <span class="ow">in</span> <span class="n">value_candidates</span><span class="p">:</span>
+                        <span class="n">is_paragraph</span> <span class="o">=</span> <span class="n">value_candidate</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;is_paragraph&quot;</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
+                        <span class="n">partial_bboxes</span> <span class="o">=</span> <span class="n">value_candidate</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;partial_bboxes&quot;</span><span class="p">,</span> <span class="p">[])</span>
+                        <span class="n">is_complete</span> <span class="o">=</span> <span class="n">value_candidate</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;is_complete&quot;</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
+                        <span class="n">confidence</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">value_candidate</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;fuzzy_score&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span> <span class="o">/</span> <span class="mf">100.0</span><span class="p">)</span>
+                        <span class="n">matched_text</span> <span class="o">=</span> <span class="n">value_candidate</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;text&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+                        <span class="n">bbox_key</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">value_candidate</span><span class="p">[</span><span class="s2">&quot;bbox&quot;</span><span class="p">])</span>  <span class="c1"># Unique key for the bbox</span>
+                        <span class="n">value_candidates_dict</span><span class="p">[</span><span class="n">bbox_key</span><span class="p">]</span> <span class="o">=</span> <span class="n">value_candidate</span>  <span class="c1"># Store for later reference</span>
+                        
+                        <span class="k">if</span> <span class="n">has_complete_match</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">is_complete</span><span class="p">:</span>
+                            <span class="k">continue</span>
+                        
+                        <span class="k">if</span> <span class="n">is_paragraph</span> <span class="ow">and</span> <span class="n">partial_bboxes</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">is_complete</span><span class="p">:</span>
+                            <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">partial_bbox</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">partial_bboxes</span><span class="p">):</span>
+                                <span class="n">field_result</span><span class="p">[</span><span class="s2">&quot;citation&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">({</span>
+                                    <span class="s2">&quot;x0&quot;</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="n">partial_bbox</span><span class="p">[</span><span class="s2">&quot;bbox&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">]),</span>
+                                    <span class="s2">&quot;y0&quot;</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="n">partial_bbox</span><span class="p">[</span><span class="s2">&quot;bbox&quot;</span><span class="p">][</span><span class="mi">1</span><span class="p">]),</span>
+                                    <span class="s2">&quot;x1&quot;</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="n">partial_bbox</span><span class="p">[</span><span class="s2">&quot;bbox&quot;</span><span class="p">][</span><span class="mi">2</span><span class="p">]),</span>
+                                    <span class="s2">&quot;y1&quot;</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="n">partial_bbox</span><span class="p">[</span><span class="s2">&quot;bbox&quot;</span><span class="p">][</span><span class="mi">3</span><span class="p">]),</span>
+                                    <span class="s2">&quot;page_number&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">page_num</span> <span class="o">+</span> <span class="mi">1</span><span class="p">),</span>
+                                    <span class="s2">&quot;page_width&quot;</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="n">page_width</span><span class="p">),</span>
+                                    <span class="s2">&quot;page_height&quot;</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="n">page_height</span><span class="p">),</span>
+                                    <span class="s2">&quot;confidence&quot;</span><span class="p">:</span> <span class="n">confidence</span><span class="p">,</span>
+                                    <span class="s2">&quot;matched_text&quot;</span><span class="p">:</span> <span class="n">partial_bbox</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;text&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+                                <span class="p">})</span>
+                        
+                        <span class="n">field_result</span><span class="p">[</span><span class="s2">&quot;citation&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">({</span>
+                            <span class="s2">&quot;x0&quot;</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="n">value_candidate</span><span class="p">[</span><span class="s2">&quot;bbox&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">]),</span>
+                            <span class="s2">&quot;y0&quot;</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="n">value_candidate</span><span class="p">[</span><span class="s2">&quot;bbox&quot;</span><span class="p">][</span><span class="mi">1</span><span class="p">]),</span>
+                            <span class="s2">&quot;x1&quot;</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="n">value_candidate</span><span class="p">[</span><span class="s2">&quot;bbox&quot;</span><span class="p">][</span><span class="mi">2</span><span class="p">]),</span>
+                            <span class="s2">&quot;y1&quot;</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="n">value_candidate</span><span class="p">[</span><span class="s2">&quot;bbox&quot;</span><span class="p">][</span><span class="mi">3</span><span class="p">]),</span>
+                            <span class="s2">&quot;page_number&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">page_num</span> <span class="o">+</span> <span class="mi">1</span><span class="p">),</span>
+                            <span class="s2">&quot;page_width&quot;</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="n">page_width</span><span class="p">),</span>
+                            <span class="s2">&quot;page_height&quot;</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="n">page_height</span><span class="p">),</span>
+                            <span class="s2">&quot;confidence&quot;</span><span class="p">:</span> <span class="n">confidence</span><span class="p">,</span>
+                            <span class="s2">&quot;matched_text&quot;</span><span class="p">:</span> <span class="n">matched_text</span>
+                        <span class="p">})</span>
+                
+                <span class="c1"># Sort citations by confidence in descending order</span>
+                <span class="n">field_result</span><span class="p">[</span><span class="s2">&quot;citation&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">field_result</span><span class="p">[</span><span class="s2">&quot;citation&quot;</span><span class="p">],</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="p">[</span><span class="s2">&quot;confidence&quot;</span><span class="p">],</span> <span class="n">reverse</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+                
+                <span class="c1"># Save image for the highest-confidence citation</span>
+                <span class="k">if</span> <span class="n">field_result</span><span class="p">[</span><span class="s2">&quot;citation&quot;</span><span class="p">]:</span>
+                    <span class="n">top_citation</span> <span class="o">=</span> <span class="n">field_result</span><span class="p">[</span><span class="s2">&quot;citation&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+                    <span class="n">bbox</span> <span class="o">=</span> <span class="p">[</span><span class="n">top_citation</span><span class="p">[</span><span class="s2">&quot;x0&quot;</span><span class="p">],</span> <span class="n">top_citation</span><span class="p">[</span><span class="s2">&quot;y0&quot;</span><span class="p">],</span> <span class="n">top_citation</span><span class="p">[</span><span class="s2">&quot;x1&quot;</span><span class="p">],</span> <span class="n">top_citation</span><span class="p">[</span><span class="s2">&quot;y1&quot;</span><span class="p">]]</span>
+                    <span class="n">page_num</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">top_citation</span><span class="p">[</span><span class="s2">&quot;page_number&quot;</span><span class="p">])</span> <span class="o">-</span> <span class="mi">1</span>
+                    <span class="n">safe_field_name</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;[^a-zA-Z0-9_]&#39;</span><span class="p">,</span> <span class="s1">&#39;_&#39;</span><span class="p">,</span> <span class="n">field_name</span><span class="p">)</span>
+                    <span class="c1"># Determine if the top citation is a paragraph by matching its bbox</span>
+                    <span class="n">is_paragraph</span> <span class="o">=</span> <span class="kc">False</span>
+                    <span class="k">for</span> <span class="n">candidate_bbox</span><span class="p">,</span> <span class="n">candidate</span> <span class="ow">in</span> <span class="n">value_candidates_dict</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                        <span class="k">if</span> <span class="n">candidate_bbox</span> <span class="o">==</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">bbox</span><span class="p">):</span>
+                            <span class="n">is_paragraph</span> <span class="o">=</span> <span class="n">candidate</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;is_paragraph&quot;</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
+                            <span class="k">break</span>
+                    <span class="n">image_type</span> <span class="o">=</span> <span class="s2">&quot;complete&quot;</span> <span class="k">if</span> <span class="n">is_paragraph</span> <span class="k">else</span> <span class="s2">&quot;single&quot;</span>
+                    <span class="n">image_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_save_field_image</span><span class="p">(</span>
+                        <span class="n">doc</span><span class="p">,</span>
+                        <span class="n">page_num</span><span class="p">,</span>
+                        <span class="n">bbox</span><span class="p">,</span>
+                        <span class="n">company_name</span><span class="p">,</span>
+                        <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">safe_field_name</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">image_type</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">unique_field_id</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+                        <span class="n">page_num</span> <span class="o">+</span> <span class="mi">1</span>
+                    <span class="p">)</span>
+                
+                <span class="n">company_result</span><span class="p">[</span><span class="s2">&quot;fields&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">field_result</span><span class="p">)</span>
+            
+            <span class="n">results</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">company_result</span><span class="p">)</span>
+        
+        <span class="n">doc</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">results</span></div>
+
+
+    <span class="k">def</span> <span class="nf">_extract_and_group_text_blocks</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">doc</span><span class="p">:</span> <span class="n">fitz</span><span class="o">.</span><span class="n">Document</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Extract text blocks from all pages and group them into paragraphs.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            doc (fitz.Document): The opened PDF document.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            List[Dict]: List of text blocks with page, text, bounding box, and type information.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">all_blocks</span> <span class="o">=</span> <span class="p">[]</span>
+        
+        <span class="k">for</span> <span class="n">page_num</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">doc</span><span class="p">)):</span>
+            <span class="n">page</span> <span class="o">=</span> <span class="n">doc</span><span class="p">[</span><span class="n">page_num</span><span class="p">]</span>
+            
+            <span class="k">if</span> <span class="n">page</span><span class="o">.</span><span class="n">get_text</span><span class="p">():</span>
+                <span class="n">blocks</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_process_searchable_page</span><span class="p">(</span><span class="n">page</span><span class="p">,</span> <span class="n">page_num</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">blocks</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_process_scanned_page</span><span class="p">(</span><span class="n">page</span><span class="p">,</span> <span class="n">page_num</span><span class="p">)</span>
+            
+            <span class="n">grouped_blocks</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_group_into_paragraphs</span><span class="p">(</span><span class="n">blocks</span><span class="p">)</span>
+            <span class="n">all_blocks</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">blocks</span><span class="p">)</span>
+            <span class="n">all_blocks</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">grouped_blocks</span><span class="p">)</span>
+        
+        <span class="k">return</span> <span class="n">all_blocks</span>
+    
+    <span class="k">def</span> <span class="nf">_process_searchable_page</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">page</span><span class="p">:</span> <span class="n">fitz</span><span class="o">.</span><span class="n">Page</span><span class="p">,</span> <span class="n">page_num</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Extract text blocks from a searchable PDF page.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            page (fitz.Page): The PDF page to process.</span>
+<span class="sd">            page_num (int): The page number (0-based).</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            List[Dict]: List of text blocks with text, bounding box, and metadata.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">blocks</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">page_blocks</span> <span class="o">=</span> <span class="n">page</span><span class="o">.</span><span class="n">get_text</span><span class="p">(</span><span class="s2">&quot;dict&quot;</span><span class="p">)[</span><span class="s2">&quot;blocks&quot;</span><span class="p">]</span>
+        
+        <span class="k">for</span> <span class="n">b</span> <span class="ow">in</span> <span class="n">page_blocks</span><span class="p">:</span>
+            <span class="k">if</span> <span class="s2">&quot;lines&quot;</span> <span class="ow">in</span> <span class="n">b</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">b</span><span class="p">[</span><span class="s2">&quot;lines&quot;</span><span class="p">]:</span>
+                    <span class="k">for</span> <span class="n">span</span> <span class="ow">in</span> <span class="n">line</span><span class="p">[</span><span class="s2">&quot;spans&quot;</span><span class="p">]:</span>
+                        <span class="n">text</span> <span class="o">=</span> <span class="n">span</span><span class="p">[</span><span class="s2">&quot;text&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+                        <span class="k">if</span> <span class="n">text</span><span class="p">:</span>
+                            <span class="n">blocks</span><span class="o">.</span><span class="n">append</span><span class="p">({</span>
+                                <span class="s2">&quot;page&quot;</span><span class="p">:</span> <span class="n">page_num</span><span class="p">,</span>
+                                <span class="s2">&quot;text&quot;</span><span class="p">:</span> <span class="n">text</span><span class="p">,</span>
+                                <span class="s2">&quot;bbox&quot;</span><span class="p">:</span> <span class="p">[</span><span class="nb">float</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">span</span><span class="p">[</span><span class="s2">&quot;bbox&quot;</span><span class="p">]],</span>
+                                <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;text&quot;</span><span class="p">,</span>
+                                <span class="s2">&quot;block_id&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;b</span><span class="si">{</span><span class="n">b</span><span class="p">[</span><span class="s1">&#39;number&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">_s</span><span class="si">{</span><span class="n">span</span><span class="p">[</span><span class="s1">&#39;size&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">blocks</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+                            <span class="p">})</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Page </span><span class="si">{</span><span class="n">page_num</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="si">}</span><span class="s2">: Extracted </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">blocks</span><span class="p">)</span><span class="si">}</span><span class="s2"> spans&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">blocks</span>
+    
+    <span class="k">def</span> <span class="nf">_process_scanned_page</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">page</span><span class="p">:</span> <span class="n">fitz</span><span class="o">.</span><span class="n">Page</span><span class="p">,</span> <span class="n">page_num</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Extract text blocks from a scanned PDF page using OCR.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            page (fitz.Page): The PDF page to process.</span>
+<span class="sd">            page_num (int): The page number (0-based).</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            List[Dict]: List of text blocks with text, bounding box, and OCR metadata.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">blocks</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">pix</span> <span class="o">=</span> <span class="n">page</span><span class="o">.</span><span class="n">get_pixmap</span><span class="p">()</span>
+        <span class="n">img</span> <span class="o">=</span> <span class="n">Image</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">io</span><span class="o">.</span><span class="n">BytesIO</span><span class="p">(</span><span class="n">pix</span><span class="o">.</span><span class="n">tobytes</span><span class="p">()))</span>
+        <span class="n">np_img</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">img</span><span class="p">)</span>
+        
+        <span class="k">for</span> <span class="n">engine_name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">ocr_priority</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">engine_name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">ocr_instances</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Warning: OCR engine &#39;</span><span class="si">{</span><span class="n">engine_name</span><span class="si">}</span><span class="s2">&#39; not initialized&quot;</span><span class="p">)</span>
+                <span class="k">continue</span>
+                
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">processed_img</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_preprocess_image</span><span class="p">(</span><span class="n">np_img</span><span class="p">,</span> <span class="n">engine_name</span><span class="p">)</span>
+                
+                <span class="k">if</span> <span class="n">engine_name</span> <span class="o">==</span> <span class="s2">&quot;tesseract&quot;</span><span class="p">:</span>
+                    <span class="n">ocr_data</span> <span class="o">=</span> <span class="n">pytesseract</span><span class="o">.</span><span class="n">image_to_data</span><span class="p">(</span>
+                        <span class="n">processed_img</span><span class="p">,</span> 
+                        <span class="n">output_type</span><span class="o">=</span><span class="n">pytesseract</span><span class="o">.</span><span class="n">Output</span><span class="o">.</span><span class="n">DICT</span><span class="p">,</span>
+                        <span class="n">config</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">ocr_config</span>
+                    <span class="p">)</span>
+                    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">ocr_data</span><span class="p">[</span><span class="s2">&quot;text&quot;</span><span class="p">])):</span>
+                        <span class="n">text</span> <span class="o">=</span> <span class="n">ocr_data</span><span class="p">[</span><span class="s2">&quot;text&quot;</span><span class="p">][</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+                        <span class="k">if</span> <span class="n">text</span> <span class="ow">and</span> <span class="nb">int</span><span class="p">(</span><span class="n">ocr_data</span><span class="p">[</span><span class="s2">&quot;conf&quot;</span><span class="p">][</span><span class="n">i</span><span class="p">])</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">min_ocr_confidence</span><span class="p">:</span>
+                            <span class="n">blocks</span><span class="o">.</span><span class="n">append</span><span class="p">({</span>
+                                <span class="s2">&quot;page&quot;</span><span class="p">:</span> <span class="n">page_num</span><span class="p">,</span>
+                                <span class="s2">&quot;text&quot;</span><span class="p">:</span> <span class="n">text</span><span class="p">,</span>
+                                <span class="s2">&quot;bbox&quot;</span><span class="p">:</span> <span class="p">[</span>
+                                    <span class="nb">float</span><span class="p">(</span><span class="n">ocr_data</span><span class="p">[</span><span class="s2">&quot;left&quot;</span><span class="p">][</span><span class="n">i</span><span class="p">]),</span>
+                                    <span class="nb">float</span><span class="p">(</span><span class="n">ocr_data</span><span class="p">[</span><span class="s2">&quot;top&quot;</span><span class="p">][</span><span class="n">i</span><span class="p">]),</span>
+                                    <span class="nb">float</span><span class="p">(</span><span class="n">ocr_data</span><span class="p">[</span><span class="s2">&quot;left&quot;</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="o">+</span> <span class="n">ocr_data</span><span class="p">[</span><span class="s2">&quot;width&quot;</span><span class="p">][</span><span class="n">i</span><span class="p">]),</span>
+                                    <span class="nb">float</span><span class="p">(</span><span class="n">ocr_data</span><span class="p">[</span><span class="s2">&quot;top&quot;</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="o">+</span> <span class="n">ocr_data</span><span class="p">[</span><span class="s2">&quot;height&quot;</span><span class="p">][</span><span class="n">i</span><span class="p">])</span>
+                                <span class="p">],</span>
+                                <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;ocr_tesseract&quot;</span><span class="p">,</span>
+                                <span class="s2">&quot;block_id&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;tesseract_word_</span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">&quot;</span>
+                            <span class="p">})</span>
+                
+                <span class="k">elif</span> <span class="n">engine_name</span> <span class="o">==</span> <span class="s2">&quot;paddleocr&quot;</span><span class="p">:</span>
+                    <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ocr_instances</span><span class="p">[</span><span class="s2">&quot;paddleocr&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">ocr</span><span class="p">(</span><span class="n">processed_img</span><span class="p">,</span> <span class="bp">cls</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">result</span><span class="p">:</span>
+                        <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">result</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
+                            <span class="n">bbox</span> <span class="o">=</span> <span class="n">line</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+                            <span class="n">text</span> <span class="o">=</span> <span class="n">line</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+                            <span class="n">confidence</span> <span class="o">=</span> <span class="n">line</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span>
+                            <span class="k">if</span> <span class="n">text</span> <span class="ow">and</span> <span class="n">confidence</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">min_ocr_confidence</span> <span class="o">/</span> <span class="mi">100</span><span class="p">:</span>
+                                <span class="n">blocks</span><span class="o">.</span><span class="n">append</span><span class="p">({</span>
+                                    <span class="s2">&quot;page&quot;</span><span class="p">:</span> <span class="n">page_num</span><span class="p">,</span>
+                                    <span class="s2">&quot;text&quot;</span><span class="p">:</span> <span class="n">text</span><span class="p">,</span>
+                                    <span class="s2">&quot;bbox&quot;</span><span class="p">:</span> <span class="p">[</span>
+                                        <span class="nb">float</span><span class="p">(</span><span class="n">bbox</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]),</span>
+                                        <span class="nb">float</span><span class="p">(</span><span class="n">bbox</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">1</span><span class="p">]),</span>
+                                        <span class="nb">float</span><span class="p">(</span><span class="n">bbox</span><span class="p">[</span><span class="mi">2</span><span class="p">][</span><span class="mi">0</span><span class="p">]),</span>
+                                        <span class="nb">float</span><span class="p">(</span><span class="n">bbox</span><span class="p">[</span><span class="mi">2</span><span class="p">][</span><span class="mi">1</span><span class="p">])</span>
+                                    <span class="p">],</span>
+                                    <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;ocr_paddleocr&quot;</span><span class="p">,</span>
+                                    <span class="s2">&quot;block_id&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;paddleocr_</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">blocks</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+                                <span class="p">})</span>
+                
+                <span class="k">elif</span> <span class="n">engine_name</span> <span class="o">==</span> <span class="s2">&quot;easyocr&quot;</span><span class="p">:</span>
+                    <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ocr_instances</span><span class="p">[</span><span class="s2">&quot;easyocr&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">readtext</span><span class="p">(</span><span class="n">processed_img</span><span class="p">,</span> <span class="n">detail</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+                    <span class="k">for</span> <span class="n">detection</span> <span class="ow">in</span> <span class="n">result</span><span class="p">:</span>
+                        <span class="n">bbox</span> <span class="o">=</span> <span class="n">detection</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+                        <span class="n">text</span> <span class="o">=</span> <span class="n">detection</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+                        <span class="n">confidence</span> <span class="o">=</span> <span class="n">detection</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+                        <span class="k">if</span> <span class="n">text</span> <span class="ow">and</span> <span class="n">confidence</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">min_ocr_confidence</span> <span class="o">/</span> <span class="mi">100</span><span class="p">:</span>
+                            <span class="n">blocks</span><span class="o">.</span><span class="n">append</span><span class="p">({</span>
+                                <span class="s2">&quot;page&quot;</span><span class="p">:</span> <span class="n">page_num</span><span class="p">,</span>
+                                <span class="s2">&quot;text&quot;</span><span class="p">:</span> <span class="n">text</span><span class="p">,</span>
+                                <span class="s2">&quot;bbox&quot;</span><span class="p">:</span> <span class="p">[</span>
+                                    <span class="nb">float</span><span class="p">(</span><span class="n">bbox</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]),</span>
+                                    <span class="nb">float</span><span class="p">(</span><span class="n">bbox</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">1</span><span class="p">]),</span>
+                                    <span class="nb">float</span><span class="p">(</span><span class="n">bbox</span><span class="p">[</span><span class="mi">2</span><span class="p">][</span><span class="mi">0</span><span class="p">]),</span>
+                                    <span class="nb">float</span><span class="p">(</span><span class="n">bbox</span><span class="p">[</span><span class="mi">2</span><span class="p">][</span><span class="mi">1</span><span class="p">])</span>
+                                <span class="p">],</span>
+                                <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;ocr_easyocr&quot;</span><span class="p">,</span>
+                                <span class="s2">&quot;block_id&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;easyocr_</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">blocks</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+                            <span class="p">})</span>
+                
+                <span class="k">if</span> <span class="n">blocks</span><span class="p">:</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Page </span><span class="si">{</span><span class="n">page_num</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="si">}</span><span class="s2">: Extracted </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">blocks</span><span class="p">)</span><span class="si">}</span><span class="s2"> blocks with </span><span class="si">{</span><span class="n">engine_name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                    <span class="k">break</span>
+                    
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Error with </span><span class="si">{</span><span class="n">engine_name</span><span class="si">}</span><span class="s2"> on page </span><span class="si">{</span><span class="n">page_num</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="k">continue</span>
+        
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">blocks</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Warning: No text blocks extracted for page </span><span class="si">{</span><span class="n">page_num</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="si">}</span><span class="s2"> with any OCR engine&quot;</span><span class="p">)</span>
+        
+        <span class="k">return</span> <span class="n">blocks</span>
+    
+    <span class="k">def</span> <span class="nf">_group_into_paragraphs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">blocks</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Group text blocks into paragraphs based on spatial proximity.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            blocks (List[Dict]): List of text blocks to group.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            List[Dict]: List of grouped paragraph blocks.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">blocks</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">[]</span>
+        
+        <span class="n">sorted_blocks</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">blocks</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="s2">&quot;bbox&quot;</span><span class="p">][</span><span class="mi">1</span><span class="p">],</span> <span class="n">x</span><span class="p">[</span><span class="s2">&quot;bbox&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">]))</span>
+        <span class="n">paragraphs</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">current_para</span> <span class="o">=</span> <span class="p">[]</span>
+        
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">block</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">sorted_blocks</span><span class="p">):</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">current_para</span><span class="p">:</span>
+                <span class="n">current_para</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">block</span><span class="p">)</span>
+                <span class="k">continue</span>
+                
+            <span class="n">prev_block</span> <span class="o">=</span> <span class="n">current_para</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+            <span class="n">vertical_gap</span> <span class="o">=</span> <span class="n">block</span><span class="p">[</span><span class="s2">&quot;bbox&quot;</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">prev_block</span><span class="p">[</span><span class="s2">&quot;bbox&quot;</span><span class="p">][</span><span class="mi">3</span><span class="p">]</span>
+            <span class="n">avg_line_height</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">([</span><span class="n">b</span><span class="p">[</span><span class="s2">&quot;bbox&quot;</span><span class="p">][</span><span class="mi">3</span><span class="p">]</span> <span class="o">-</span> <span class="n">b</span><span class="p">[</span><span class="s2">&quot;bbox&quot;</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span> <span class="k">for</span> <span class="n">b</span> <span class="ow">in</span> <span class="n">current_para</span><span class="p">])</span>
+            <span class="n">horizontal_diff</span> <span class="o">=</span> <span class="nb">abs</span><span class="p">(</span><span class="n">block</span><span class="p">[</span><span class="s2">&quot;bbox&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="n">prev_block</span><span class="p">[</span><span class="s2">&quot;bbox&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">])</span>
+            
+            <span class="k">if</span> <span class="p">(</span><span class="n">vertical_gap</span> <span class="o">&lt;</span> <span class="n">avg_line_height</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">paragraph_threshold</span> <span class="ow">and</span>
+                <span class="n">horizontal_diff</span> <span class="o">&lt;</span> <span class="mi">20</span><span class="p">):</span>
+                <span class="n">current_para</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">block</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">paragraphs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_create_paragraph_block</span><span class="p">(</span><span class="n">current_para</span><span class="p">))</span>
+                <span class="n">current_para</span> <span class="o">=</span> <span class="p">[</span><span class="n">block</span><span class="p">]</span>
+        
+        <span class="k">if</span> <span class="n">current_para</span><span class="p">:</span>
+            <span class="n">paragraphs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_create_paragraph_block</span><span class="p">(</span><span class="n">current_para</span><span class="p">))</span>
+        
+        <span class="k">return</span> <span class="n">paragraphs</span>
+    
+    <span class="k">def</span> <span class="nf">_create_paragraph_block</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">blocks</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Create a paragraph block from a list of text blocks.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            blocks (List[Dict]): List of text blocks to combine.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Dict: A paragraph block with combined text and bounding box.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">combined_text</span> <span class="o">=</span> <span class="s1">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="n">b</span><span class="p">[</span><span class="s2">&quot;text&quot;</span><span class="p">]</span> <span class="k">for</span> <span class="n">b</span> <span class="ow">in</span> <span class="n">blocks</span><span class="p">])</span>
+        <span class="n">x0</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="nb">min</span><span class="p">(</span><span class="n">b</span><span class="p">[</span><span class="s2">&quot;bbox&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">b</span> <span class="ow">in</span> <span class="n">blocks</span><span class="p">))</span>
+        <span class="n">y0</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="nb">min</span><span class="p">(</span><span class="n">b</span><span class="p">[</span><span class="s2">&quot;bbox&quot;</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span> <span class="k">for</span> <span class="n">b</span> <span class="ow">in</span> <span class="n">blocks</span><span class="p">))</span>
+        <span class="n">x1</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="nb">max</span><span class="p">(</span><span class="n">b</span><span class="p">[</span><span class="s2">&quot;bbox&quot;</span><span class="p">][</span><span class="mi">2</span><span class="p">]</span> <span class="k">for</span> <span class="n">b</span> <span class="ow">in</span> <span class="n">blocks</span><span class="p">))</span>
+        <span class="n">y1</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="nb">max</span><span class="p">(</span><span class="n">b</span><span class="p">[</span><span class="s2">&quot;bbox&quot;</span><span class="p">][</span><span class="mi">3</span><span class="p">]</span> <span class="k">for</span> <span class="n">b</span> <span class="ow">in</span> <span class="n">blocks</span><span class="p">))</span>
+        
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">&quot;page&quot;</span><span class="p">:</span> <span class="n">blocks</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s2">&quot;page&quot;</span><span class="p">],</span>
+            <span class="s2">&quot;text&quot;</span><span class="p">:</span> <span class="n">combined_text</span><span class="p">,</span>
+            <span class="s2">&quot;bbox&quot;</span><span class="p">:</span> <span class="p">[</span><span class="n">x0</span><span class="p">,</span> <span class="n">y0</span><span class="p">,</span> <span class="n">x1</span><span class="p">,</span> <span class="n">y1</span><span class="p">],</span>
+            <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="n">blocks</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s2">&quot;type&quot;</span><span class="p">],</span>
+            <span class="s2">&quot;is_paragraph&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+            <span class="s2">&quot;component_blocks&quot;</span><span class="p">:</span> <span class="n">blocks</span><span class="p">,</span>
+            <span class="s2">&quot;block_id&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;para_</span><span class="si">{</span><span class="n">blocks</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s1">&#39;block_id&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="p">}</span>
+    
+    <span class="k">def</span> <span class="nf">_find_field_candidates</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">field_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">blocks</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Find text blocks that match a field name or its alternative patterns.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            field_name (str): The field name to search for.</span>
+<span class="sd">            blocks (List[Dict]): List of text blocks to search.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            List[Dict]: List of matching field candidates with text and bounding boxes.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">candidates</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">patterns</span> <span class="o">=</span> <span class="p">[</span><span class="n">re</span><span class="o">.</span><span class="n">escape</span><span class="p">(</span><span class="n">field_name</span><span class="p">)]</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">field_patterns</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">field_name</span><span class="p">,</span> <span class="p">[])</span>
+        
+        <span class="k">for</span> <span class="n">pattern</span> <span class="ow">in</span> <span class="n">patterns</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">block</span> <span class="ow">in</span> <span class="n">blocks</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">re</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">pattern</span><span class="p">,</span> <span class="n">block</span><span class="p">[</span><span class="s2">&quot;text&quot;</span><span class="p">],</span> <span class="n">re</span><span class="o">.</span><span class="n">IGNORECASE</span><span class="p">):</span>
+                    <span class="n">candidates</span><span class="o">.</span><span class="n">append</span><span class="p">({</span>
+                        <span class="s2">&quot;text&quot;</span><span class="p">:</span> <span class="n">block</span><span class="p">[</span><span class="s2">&quot;text&quot;</span><span class="p">],</span>
+                        <span class="s2">&quot;bbox&quot;</span><span class="p">:</span> <span class="p">[</span><span class="nb">float</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">block</span><span class="p">[</span><span class="s2">&quot;bbox&quot;</span><span class="p">]],</span>
+                        <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="n">block</span><span class="p">[</span><span class="s2">&quot;type&quot;</span><span class="p">],</span>
+                        <span class="s2">&quot;pattern&quot;</span><span class="p">:</span> <span class="n">pattern</span><span class="p">,</span>
+                        <span class="s2">&quot;block_id&quot;</span><span class="p">:</span> <span class="n">block</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;block_id&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+                    <span class="p">})</span>
+        
+        <span class="k">return</span> <span class="n">candidates</span>
+    
+    <span class="k">def</span> <span class="nf">_find_value_candidates</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">target_value</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">blocks</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">],</span> <span class="n">page_width</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Find text blocks that match a target value, including paragraph matches.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            target_value (str): The value to search for.</span>
+<span class="sd">            blocks (List[Dict]): List of text blocks to search.</span>
+<span class="sd">            page_width (float): Width of the page for spatial calculations.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            List[Dict]: List of matching value candidates with text, bounding boxes, and metadata.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">is_paragraph</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">target_value</span><span class="o">.</span><span class="n">split</span><span class="p">())</span> <span class="o">&gt;</span> <span class="mi">10</span>
+        <span class="n">candidates</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">exact_candidates</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_find_exact_value_candidates</span><span class="p">(</span><span class="n">target_value</span><span class="p">,</span> <span class="n">blocks</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Exact candidates for &#39;</span><span class="si">{</span><span class="n">target_value</span><span class="p">[:</span><span class="mi">50</span><span class="p">]</span><span class="si">}</span><span class="s2">...&#39;: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">exact_candidates</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="n">candidates</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">exact_candidates</span><span class="p">)</span>
+        
+        <span class="k">if</span> <span class="n">is_paragraph</span><span class="p">:</span>
+            <span class="n">para_candidates</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_find_paragraph_candidates</span><span class="p">(</span><span class="n">target_value</span><span class="p">,</span> <span class="n">blocks</span><span class="p">,</span> <span class="n">page_width</span><span class="p">,</span> <span class="n">is_paragraph</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Paragraph candidates for &#39;</span><span class="si">{</span><span class="n">target_value</span><span class="p">[:</span><span class="mi">50</span><span class="p">]</span><span class="si">}</span><span class="s2">...&#39;: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">para_candidates</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="n">candidates</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">para_candidates</span><span class="p">)</span>
+        
+        <span class="n">seen</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+        <span class="n">unique_candidates</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">cand</span> <span class="ow">in</span> <span class="n">candidates</span><span class="p">:</span>
+            <span class="n">key</span> <span class="o">=</span> <span class="p">(</span><span class="nb">tuple</span><span class="p">(</span><span class="n">cand</span><span class="p">[</span><span class="s2">&quot;bbox&quot;</span><span class="p">]),</span> <span class="n">cand</span><span class="p">[</span><span class="s2">&quot;text&quot;</span><span class="p">])</span>
+            <span class="k">if</span> <span class="n">key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">seen</span><span class="p">:</span>
+                <span class="n">seen</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+                <span class="n">unique_candidates</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">cand</span><span class="p">)</span>
+        
+        <span class="k">return</span> <span class="n">unique_candidates</span>
+    
+    <span class="k">def</span> <span class="nf">_find_exact_value_candidates</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">target_value</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">blocks</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Find text blocks with exact or fuzzy matches for a target value.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            target_value (str): The value to search for.</span>
+<span class="sd">            blocks (List[Dict]): List of text blocks to search.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            List[Dict]: List of matching value candidates with text, bounding boxes, and fuzzy scores.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">candidates</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">target_clean</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;\s+&#39;</span><span class="p">,</span> <span class="s1">&#39; &#39;</span><span class="p">,</span> <span class="n">target_value</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+        
+        <span class="k">for</span> <span class="n">block</span> <span class="ow">in</span> <span class="n">blocks</span><span class="p">:</span>
+            <span class="n">block_text_clean</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;\s+&#39;</span><span class="p">,</span> <span class="s1">&#39; &#39;</span><span class="p">,</span> <span class="n">block</span><span class="p">[</span><span class="s2">&quot;text&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+            <span class="n">fuzzy_score</span> <span class="o">=</span> <span class="n">fuzz</span><span class="o">.</span><span class="n">ratio</span><span class="p">(</span><span class="n">target_clean</span><span class="p">,</span> <span class="n">block_text_clean</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">block_text_clean</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="o">==</span> <span class="n">target_clean</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="ow">or</span> <span class="n">fuzzy_score</span> <span class="o">&gt;</span> <span class="mi">50</span><span class="p">:</span>
+                <span class="n">candidates</span><span class="o">.</span><span class="n">append</span><span class="p">({</span>
+                    <span class="s2">&quot;text&quot;</span><span class="p">:</span> <span class="n">block</span><span class="p">[</span><span class="s2">&quot;text&quot;</span><span class="p">],</span>
+                    <span class="s2">&quot;bbox&quot;</span><span class="p">:</span> <span class="p">[</span><span class="nb">float</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">block</span><span class="p">[</span><span class="s2">&quot;bbox&quot;</span><span class="p">]],</span>
+                    <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="n">block</span><span class="p">[</span><span class="s2">&quot;type&quot;</span><span class="p">],</span>
+                    <span class="s2">&quot;is_paragraph&quot;</span><span class="p">:</span> <span class="n">block</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;is_paragraph&quot;</span><span class="p">,</span> <span class="kc">False</span><span class="p">),</span>
+                    <span class="s2">&quot;is_complete&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+                    <span class="s2">&quot;match_type&quot;</span><span class="p">:</span> <span class="s2">&quot;exact&quot;</span> <span class="k">if</span> <span class="n">block_text_clean</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="o">==</span> <span class="n">target_clean</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="k">else</span> <span class="s2">&quot;fuzzy&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;block_id&quot;</span><span class="p">:</span> <span class="n">block</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;block_id&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">),</span>
+                    <span class="s2">&quot;fuzzy_score&quot;</span><span class="p">:</span> <span class="n">fuzzy_score</span>
+                <span class="p">})</span>
+                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Match found for &#39;</span><span class="si">{</span><span class="n">target_value</span><span class="p">[:</span><span class="mi">50</span><span class="p">]</span><span class="si">}</span><span class="s2">...&#39; at bbox </span><span class="si">{</span><span class="n">block</span><span class="p">[</span><span class="s1">&#39;bbox&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="s1">&#39;exact&#39;</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="n">block_text_clean</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">target_clean</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="sa">f</span><span class="s1">&#39;fuzzy (score=</span><span class="si">{</span><span class="n">fuzzy_score</span><span class="si">}</span><span class="s1">)&#39;</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        
+        <span class="k">return</span> <span class="n">candidates</span>
+    
+    <span class="k">def</span> <span class="nf">_find_paragraph_candidates</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">target_value</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">blocks</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">],</span> <span class="n">page_width</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">is_paragraph</span><span class="p">:</span> <span class="nb">bool</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Find paragraph candidates by matching sequences of text blocks.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            target_value (str): The value to search for.</span>
+<span class="sd">            blocks (List[Dict]): List of text blocks to search.</span>
+<span class="sd">            page_width (float): Width of the page for spatial calculations.</span>
+<span class="sd">            is_paragraph (bool): Whether the target value is expected to be a paragraph.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            List[Dict]: List of paragraph candidates with combined text and bounding boxes.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">candidates</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">target_clean</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;\s+&#39;</span><span class="p">,</span> <span class="s1">&#39; &#39;</span><span class="p">,</span> <span class="n">target_value</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+        <span class="n">target_words</span> <span class="o">=</span> <span class="n">target_clean</span><span class="o">.</span><span class="n">split</span><span class="p">()</span>
+        
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">target_words</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="mi">2</span> <span class="ow">and</span> <span class="nb">bool</span><span class="p">(</span><span class="n">re</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;^-?\d*\.?\d+$&#39;</span><span class="p">,</span> <span class="n">target_value</span><span class="p">)):</span>
+            <span class="k">return</span> <span class="p">[]</span>
+        
+        <span class="n">span_blocks</span> <span class="o">=</span> <span class="p">[</span><span class="n">b</span> <span class="k">for</span> <span class="n">b</span> <span class="ow">in</span> <span class="n">blocks</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">b</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;is_paragraph&quot;</span><span class="p">,</span> <span class="kc">False</span><span class="p">)]</span>
+        <span class="n">sorted_blocks</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">span_blocks</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="s2">&quot;bbox&quot;</span><span class="p">][</span><span class="mi">1</span><span class="p">],</span> <span class="n">x</span><span class="p">[</span><span class="s2">&quot;bbox&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">]))</span>
+        
+        <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">while</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">sorted_blocks</span><span class="p">):</span>
+            <span class="n">current_blocks</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="n">current_text</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="n">current_pos</span> <span class="o">=</span> <span class="n">i</span>
+            <span class="n">target_pos</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="n">partial_bboxes</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="n">fuzzy_scores</span> <span class="o">=</span> <span class="p">[]</span>
+            
+            <span class="k">while</span> <span class="n">current_pos</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">sorted_blocks</span><span class="p">)</span> <span class="ow">and</span> <span class="n">target_pos</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">target_words</span><span class="p">):</span>
+                <span class="n">block_text</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;\s+&#39;</span><span class="p">,</span> <span class="s1">&#39; &#39;</span><span class="p">,</span> <span class="n">sorted_blocks</span><span class="p">[</span><span class="n">current_pos</span><span class="p">][</span><span class="s2">&quot;text&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+                <span class="n">block_words</span> <span class="o">=</span> <span class="n">block_text</span><span class="o">.</span><span class="n">split</span><span class="p">()</span>
+                <span class="n">fuzzy_score</span> <span class="o">=</span> <span class="n">fuzz</span><span class="o">.</span><span class="n">partial_ratio</span><span class="p">(</span><span class="s1">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">block_words</span><span class="p">),</span> <span class="s1">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">target_words</span><span class="p">[</span><span class="n">target_pos</span><span class="p">:</span><span class="n">target_pos</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="n">block_words</span><span class="p">)]))</span>
+                
+                <span class="k">if</span> <span class="n">fuzzy_score</span> <span class="o">&gt;</span> <span class="mi">50</span><span class="p">:</span>
+                    <span class="n">current_blocks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">sorted_blocks</span><span class="p">[</span><span class="n">current_pos</span><span class="p">])</span>
+                    <span class="n">current_text</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">block_text</span><span class="p">)</span>
+                    <span class="n">partial_bboxes</span><span class="o">.</span><span class="n">append</span><span class="p">({</span>
+                        <span class="s2">&quot;bbox&quot;</span><span class="p">:</span> <span class="p">[</span><span class="nb">float</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">sorted_blocks</span><span class="p">[</span><span class="n">current_pos</span><span class="p">][</span><span class="s2">&quot;bbox&quot;</span><span class="p">]],</span>
+                        <span class="s2">&quot;text&quot;</span><span class="p">:</span> <span class="n">sorted_blocks</span><span class="p">[</span><span class="n">current_pos</span><span class="p">][</span><span class="s2">&quot;text&quot;</span><span class="p">]</span>
+                    <span class="p">})</span>
+                    <span class="n">fuzzy_scores</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">fuzzy_score</span><span class="p">)</span>
+                    <span class="n">target_pos</span> <span class="o">+=</span> <span class="nb">len</span><span class="p">(</span><span class="n">block_words</span><span class="p">)</span>
+                    <span class="n">current_pos</span> <span class="o">+=</span> <span class="mi">1</span>
+                    
+                    <span class="k">if</span> <span class="n">current_blocks</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">current_blocks</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+                        <span class="n">prev_block</span> <span class="o">=</span> <span class="n">current_blocks</span><span class="p">[</span><span class="o">-</span><span class="mi">2</span><span class="p">]</span>
+                        <span class="n">curr_block</span> <span class="o">=</span> <span class="n">current_blocks</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+                        <span class="n">vertical_gap</span> <span class="o">=</span> <span class="n">curr_block</span><span class="p">[</span><span class="s2">&quot;bbox&quot;</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">prev_block</span><span class="p">[</span><span class="s2">&quot;bbox&quot;</span><span class="p">][</span><span class="mi">3</span><span class="p">]</span>
+                        <span class="n">horizontal_diff</span> <span class="o">=</span> <span class="nb">abs</span><span class="p">(</span><span class="n">curr_block</span><span class="p">[</span><span class="s2">&quot;bbox&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="n">prev_block</span><span class="p">[</span><span class="s2">&quot;bbox&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">])</span>
+                        <span class="n">avg_line_height</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">([</span><span class="n">b</span><span class="p">[</span><span class="s2">&quot;bbox&quot;</span><span class="p">][</span><span class="mi">3</span><span class="p">]</span> <span class="o">-</span> <span class="n">b</span><span class="p">[</span><span class="s2">&quot;bbox&quot;</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span> <span class="k">for</span> <span class="n">b</span> <span class="ow">in</span> <span class="n">current_blocks</span><span class="p">])</span>
+                        <span class="k">if</span> <span class="n">vertical_gap</span> <span class="o">&gt;</span> <span class="n">avg_line_height</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">paragraph_threshold</span> <span class="ow">or</span> <span class="n">horizontal_diff</span> <span class="o">&gt;</span> <span class="mi">20</span><span class="p">:</span>
+                            <span class="k">break</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">break</span>
+            
+            <span class="n">combined_text</span> <span class="o">=</span> <span class="s1">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">current_text</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+            <span class="n">overall_fuzzy_score</span> <span class="o">=</span> <span class="n">fuzz</span><span class="o">.</span><span class="n">ratio</span><span class="p">(</span><span class="n">combined_text</span><span class="p">,</span> <span class="n">target_clean</span><span class="p">)</span> <span class="k">if</span> <span class="n">combined_text</span> <span class="k">else</span> <span class="mi">0</span>
+            <span class="k">if</span> <span class="n">combined_text</span> <span class="ow">and</span> <span class="p">(</span><span class="n">combined_text</span> <span class="o">==</span> <span class="n">target_clean</span> <span class="ow">or</span> <span class="n">overall_fuzzy_score</span> <span class="o">&gt;</span> <span class="mi">50</span><span class="p">):</span>
+                <span class="n">x0</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="nb">min</span><span class="p">(</span><span class="n">b</span><span class="p">[</span><span class="s2">&quot;bbox&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">b</span> <span class="ow">in</span> <span class="n">partial_bboxes</span><span class="p">))</span>
+                <span class="n">y0</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="nb">min</span><span class="p">(</span><span class="n">b</span><span class="p">[</span><span class="s2">&quot;bbox&quot;</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span> <span class="k">for</span> <span class="n">b</span> <span class="ow">in</span> <span class="n">partial_bboxes</span><span class="p">))</span>
+                <span class="n">x1</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="nb">max</span><span class="p">(</span><span class="n">b</span><span class="p">[</span><span class="s2">&quot;bbox&quot;</span><span class="p">][</span><span class="mi">2</span><span class="p">]</span> <span class="k">for</span> <span class="n">b</span> <span class="ow">in</span> <span class="n">partial_bboxes</span><span class="p">))</span>
+                <span class="n">y1</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="nb">max</span><span class="p">(</span><span class="n">b</span><span class="p">[</span><span class="s2">&quot;bbox&quot;</span><span class="p">][</span><span class="mi">3</span><span class="p">]</span> <span class="k">for</span> <span class="n">b</span> <span class="ow">in</span> <span class="n">partial_bboxes</span><span class="p">))</span>
+                
+                <span class="n">candidates</span><span class="o">.</span><span class="n">append</span><span class="p">({</span>
+                    <span class="s2">&quot;text&quot;</span><span class="p">:</span> <span class="n">combined_text</span><span class="p">,</span>
+                    <span class="s2">&quot;bbox&quot;</span><span class="p">:</span> <span class="p">[</span><span class="n">x0</span><span class="p">,</span> <span class="n">y0</span><span class="p">,</span> <span class="n">x1</span><span class="p">,</span> <span class="n">y1</span><span class="p">],</span>
+                    <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="n">current_blocks</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s2">&quot;type&quot;</span><span class="p">],</span>
+                    <span class="s2">&quot;is_paragraph&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+                    <span class="s2">&quot;is_complete&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+                    <span class="s2">&quot;match_type&quot;</span><span class="p">:</span> <span class="s2">&quot;exact_sequence&quot;</span> <span class="k">if</span> <span class="n">combined_text</span> <span class="o">==</span> <span class="n">target_clean</span> <span class="k">else</span> <span class="s2">&quot;fuzzy_sequence&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;block_id&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;seq_</span><span class="si">{</span><span class="n">current_blocks</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s1">&#39;block_id&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;partial_bboxes&quot;</span><span class="p">:</span> <span class="n">partial_bboxes</span><span class="p">,</span>
+                    <span class="s2">&quot;fuzzy_score&quot;</span><span class="p">:</span> <span class="n">overall_fuzzy_score</span>
+                <span class="p">})</span>
+                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Found paragraph match for &#39;</span><span class="si">{</span><span class="n">target_value</span><span class="p">[:</span><span class="mi">50</span><span class="p">]</span><span class="si">}</span><span class="s2">...&#39;: </span><span class="si">{</span><span class="s1">&#39;exact&#39;</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="n">combined_text</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">target_clean</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="sa">f</span><span class="s1">&#39;fuzzy (score=</span><span class="si">{</span><span class="n">overall_fuzzy_score</span><span class="si">}</span><span class="s1">)&#39;</span><span class="si">}</span><span class="s2"> at bbox [</span><span class="si">{</span><span class="n">x0</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><span class="n">y0</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><span class="n">x1</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><span class="n">y1</span><span class="si">}</span><span class="s2">]&quot;</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">combined_text</span> <span class="ow">and</span> <span class="n">overall_fuzzy_score</span> <span class="o">&gt;</span> <span class="mi">50</span><span class="p">:</span>
+                <span class="n">x0</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="nb">min</span><span class="p">(</span><span class="n">b</span><span class="p">[</span><span class="s2">&quot;bbox&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">b</span> <span class="ow">in</span> <span class="n">partial_bboxes</span><span class="p">))</span>
+                <span class="n">y0</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="nb">min</span><span class="p">(</span><span class="n">b</span><span class="p">[</span><span class="s2">&quot;bbox&quot;</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span> <span class="k">for</span> <span class="n">b</span> <span class="ow">in</span> <span class="n">partial_bboxes</span><span class="p">))</span>
+                <span class="n">x1</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="nb">max</span><span class="p">(</span><span class="n">b</span><span class="p">[</span><span class="s2">&quot;bbox&quot;</span><span class="p">][</span><span class="mi">2</span><span class="p">]</span> <span class="k">for</span> <span class="n">b</span> <span class="ow">in</span> <span class="n">partial_bboxes</span><span class="p">))</span>
+                <span class="n">y1</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="nb">max</span><span class="p">(</span><span class="n">b</span><span class="p">[</span><span class="s2">&quot;bbox&quot;</span><span class="p">][</span><span class="mi">3</span><span class="p">]</span> <span class="k">for</span> <span class="n">b</span> <span class="ow">in</span> <span class="n">partial_bboxes</span><span class="p">))</span>
+                
+                <span class="n">candidates</span><span class="o">.</span><span class="n">append</span><span class="p">({</span>
+                    <span class="s2">&quot;text&quot;</span><span class="p">:</span> <span class="n">combined_text</span><span class="p">,</span>
+                    <span class="s2">&quot;bbox&quot;</span><span class="p">:</span> <span class="p">[</span><span class="n">x0</span><span class="p">,</span> <span class="n">y0</span><span class="p">,</span> <span class="n">x1</span><span class="p">,</span> <span class="n">y1</span><span class="p">],</span>
+                    <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="n">current_blocks</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s2">&quot;type&quot;</span><span class="p">],</span>
+                    <span class="s2">&quot;is_paragraph&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+                    <span class="s2">&quot;is_complete&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+                    <span class="s2">&quot;match_type&quot;</span><span class="p">:</span> <span class="s2">&quot;partial_fuzzy&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;block_id&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;partial_seq_</span><span class="si">{</span><span class="n">current_blocks</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s1">&#39;block_id&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;partial_bboxes&quot;</span><span class="p">:</span> <span class="n">partial_bboxes</span><span class="p">,</span>
+                    <span class="s2">&quot;fuzzy_score&quot;</span><span class="p">:</span> <span class="n">overall_fuzzy_score</span>
+                <span class="p">})</span>
+                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Found partial paragraph match for &#39;</span><span class="si">{</span><span class="n">target_value</span><span class="p">[:</span><span class="mi">50</span><span class="p">]</span><span class="si">}</span><span class="s2">...&#39;: fuzzy (score=</span><span class="si">{</span><span class="n">overall_fuzzy_score</span><span class="si">}</span><span class="s2">) at bbox [</span><span class="si">{</span><span class="n">x0</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><span class="n">y0</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><span class="n">x1</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><span class="n">y1</span><span class="si">}</span><span class="s2">]&quot;</span><span class="p">)</span>
+            
+            <span class="n">i</span> <span class="o">=</span> <span class="n">current_pos</span> <span class="k">if</span> <span class="n">current_pos</span> <span class="o">&gt;</span> <span class="n">i</span> <span class="k">else</span> <span class="n">i</span> <span class="o">+</span> <span class="mi">1</span>
+        
+        <span class="k">return</span> <span class="n">candidates</span>
+    
+    <span class="k">def</span> <span class="nf">_build_spatial_graph</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">blocks</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">],</span> <span class="n">page_width</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">page_height</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]]]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Build a spatial graph of text blocks based on their proximity.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            blocks (List[Dict]): List of text blocks.</span>
+<span class="sd">            page_width (float): Width of the page.</span>
+<span class="sd">            page_height (float): Height of the page.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Dict[str, List[Tuple[str, float]]]: Graph with block IDs as nodes and distances as edge weights.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">graph</span> <span class="o">=</span> <span class="n">defaultdict</span><span class="p">(</span><span class="nb">list</span><span class="p">)</span>
+        
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">block1</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">blocks</span><span class="p">):</span>
+            <span class="n">center1</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_bbox_center</span><span class="p">(</span><span class="n">block1</span><span class="p">[</span><span class="s2">&quot;bbox&quot;</span><span class="p">])</span>
+            <span class="k">for</span> <span class="n">j</span><span class="p">,</span> <span class="n">block2</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">blocks</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">:],</span> <span class="n">start</span><span class="o">=</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">):</span>
+                <span class="n">center2</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_bbox_center</span><span class="p">(</span><span class="n">block2</span><span class="p">[</span><span class="s2">&quot;bbox&quot;</span><span class="p">])</span>
+                <span class="n">dist</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">distance</span><span class="o">.</span><span class="n">euclidean</span><span class="p">(</span><span class="n">center1</span><span class="p">,</span> <span class="n">center2</span><span class="p">))</span>
+                
+                <span class="k">if</span> <span class="n">dist</span> <span class="o">&lt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_edge_distance</span><span class="p">:</span>
+                    <span class="n">graph</span><span class="p">[</span><span class="n">block1</span><span class="p">[</span><span class="s2">&quot;block_id&quot;</span><span class="p">]]</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">block2</span><span class="p">[</span><span class="s2">&quot;block_id&quot;</span><span class="p">],</span> <span class="n">dist</span><span class="p">))</span>
+                    <span class="n">graph</span><span class="p">[</span><span class="n">block2</span><span class="p">[</span><span class="s2">&quot;block_id&quot;</span><span class="p">]]</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">block1</span><span class="p">[</span><span class="s2">&quot;block_id&quot;</span><span class="p">],</span> <span class="n">dist</span><span class="p">))</span>
+        
+        <span class="k">return</span> <span class="n">graph</span>
+    
+    <span class="k">def</span> <span class="nf">_save_graph_image</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">graph</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]]],</span> <span class="n">blocks</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">],</span> 
+                         <span class="n">page_width</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">page_height</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">display_page_num</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Save a visualization of the spatial graph (currently commented out).</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            graph (Dict[str, List[Tuple[str, float]]]): The spatial graph.</span>
+<span class="sd">            blocks (List[Dict]): List of text blocks.</span>
+<span class="sd">            page_width (float): Width of the page.</span>
+<span class="sd">            page_height (float): Height of the page.</span>
+<span class="sd">            display_page_num (int): Page number for display (1-based).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="n">page_width</span> <span class="o">/</span> <span class="mi">72</span><span class="p">,</span> <span class="n">page_height</span> <span class="o">/</span> <span class="mi">72</span><span class="p">))</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">page_width</span><span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">page_height</span><span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">invert_yaxis</span><span class="p">()</span>
+        
+        <span class="n">block_dict</span> <span class="o">=</span> <span class="p">{</span><span class="n">block</span><span class="p">[</span><span class="s2">&quot;block_id&quot;</span><span class="p">]:</span> <span class="n">block</span> <span class="k">for</span> <span class="n">block</span> <span class="ow">in</span> <span class="n">blocks</span><span class="p">}</span>
+        <span class="k">for</span> <span class="n">block_id</span> <span class="ow">in</span> <span class="n">graph</span><span class="p">:</span>
+            <span class="n">block</span> <span class="o">=</span> <span class="n">block_dict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">block_id</span><span class="p">,</span> <span class="p">{})</span>
+            <span class="n">bbox</span> <span class="o">=</span> <span class="n">block</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;bbox&quot;</span><span class="p">,</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">])</span>
+            <span class="n">center</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_bbox_center</span><span class="p">(</span><span class="n">bbox</span><span class="p">)</span>
+            <span class="n">text</span> <span class="o">=</span> <span class="n">block</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;text&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)[:</span><span class="mi">20</span><span class="p">]</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">center</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">center</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="s1">&#39;o&#39;</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;blue&#39;</span><span class="p">,</span> <span class="n">markersize</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="n">center</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">center</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">text</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">8</span><span class="p">,</span> <span class="n">ha</span><span class="o">=</span><span class="s1">&#39;center&#39;</span><span class="p">,</span> <span class="n">va</span><span class="o">=</span><span class="s1">&#39;bottom&#39;</span><span class="p">)</span>
+            
+            <span class="n">rect</span> <span class="o">=</span> <span class="n">patches</span><span class="o">.</span><span class="n">Rectangle</span><span class="p">(</span>
+                <span class="p">(</span><span class="n">bbox</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">bbox</span><span class="p">[</span><span class="mi">1</span><span class="p">]),</span>
+                <span class="n">bbox</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">-</span> <span class="n">bbox</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+                <span class="n">bbox</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span> <span class="o">-</span> <span class="n">bbox</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span>
+                <span class="n">linewidth</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+                <span class="n">edgecolor</span><span class="o">=</span><span class="s1">&#39;green&#39;</span><span class="p">,</span>
+                <span class="n">facecolor</span><span class="o">=</span><span class="s1">&#39;none&#39;</span><span class="p">,</span>
+                <span class="n">alpha</span><span class="o">=</span><span class="mf">0.3</span>
+            <span class="p">)</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">add_patch</span><span class="p">(</span><span class="n">rect</span><span class="p">)</span>
+        
+        <span class="n">seen</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">source_id</span><span class="p">,</span> <span class="n">neighbors</span> <span class="ow">in</span> <span class="n">graph</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">source_center</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_bbox_center</span><span class="p">(</span><span class="n">block_dict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">source_id</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;bbox&quot;</span><span class="p">,</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]))</span>
+            <span class="k">for</span> <span class="n">target_id</span><span class="p">,</span> <span class="n">weight</span> <span class="ow">in</span> <span class="n">neighbors</span><span class="p">:</span>
+                <span class="n">edge</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="nb">sorted</span><span class="p">([</span><span class="n">source_id</span><span class="p">,</span> <span class="n">target_id</span><span class="p">]))</span>
+                <span class="k">if</span> <span class="n">edge</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">seen</span><span class="p">:</span>
+                    <span class="n">seen</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">edge</span><span class="p">)</span>
+                    <span class="n">target_center</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_bbox_center</span><span class="p">(</span><span class="n">block_dict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">target_id</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;bbox&quot;</span><span class="p">,</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]))</span>
+                    <span class="n">line_width</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mf">0.5</span><span class="p">,</span> <span class="mi">5</span> <span class="o">*</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">max_edge_distance</span> <span class="o">-</span> <span class="n">weight</span><span class="p">)</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_edge_distance</span><span class="p">)</span>
+                    <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span>
+                        <span class="p">[</span><span class="n">source_center</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">target_center</span><span class="p">[</span><span class="mi">0</span><span class="p">]],</span>
+                        <span class="p">[</span><span class="n">source_center</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">target_center</span><span class="p">[</span><span class="mi">1</span><span class="p">]],</span>
+                        <span class="s1">&#39;k-&#39;</span><span class="p">,</span>
+                        <span class="n">linewidth</span><span class="o">=</span><span class="n">line_width</span><span class="p">,</span>
+                        <span class="n">alpha</span><span class="o">=</span><span class="mf">0.5</span>
+                    <span class="p">)</span>
+        
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Spatial Graph - Page </span><span class="si">{</span><span class="n">display_page_num</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s2">&quot;X (points)&quot;</span><span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s2">&quot;Y (points)&quot;</span><span class="p">)</span>
+        
+        <span class="n">filename</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;graph_page_</span><span class="si">{</span><span class="n">display_page_num</span><span class="si">}</span><span class="s2">.png&quot;</span>
+        <span class="n">filepath</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">output_image_dir</span><span class="p">,</span> <span class="n">filename</span><span class="p">)</span>
+        <span class="c1"># plt.savefig(filepath, dpi=300, bbox_inches=&#39;tight&#39;)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">close</span><span class="p">(</span><span class="n">fig</span><span class="p">)</span>
+    
+    <span class="k">def</span> <span class="nf">_dijkstra</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">graph</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]]],</span> <span class="n">start</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Run Dijkstra&#39;s algorithm to find shortest paths from a starting node.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            graph (Dict[str, List[Tuple[str, float]]]): The spatial graph.</span>
+<span class="sd">            start (str): Starting node ID.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Dict[str, float]: Shortest distances from the start node to all other nodes.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">distances</span> <span class="o">=</span> <span class="p">{</span><span class="n">node</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="s1">&#39;inf&#39;</span><span class="p">)</span> <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">graph</span><span class="p">}</span>
+        <span class="n">distances</span><span class="p">[</span><span class="n">start</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">pq</span> <span class="o">=</span> <span class="p">[(</span><span class="mi">0</span><span class="p">,</span> <span class="n">start</span><span class="p">)]</span>
+        
+        <span class="k">while</span> <span class="n">pq</span><span class="p">:</span>
+            <span class="n">current_dist</span><span class="p">,</span> <span class="n">current_node</span> <span class="o">=</span> <span class="n">heapq</span><span class="o">.</span><span class="n">heappop</span><span class="p">(</span><span class="n">pq</span><span class="p">)</span>
+            
+            <span class="k">if</span> <span class="n">current_dist</span> <span class="o">&gt;</span> <span class="n">distances</span><span class="p">[</span><span class="n">current_node</span><span class="p">]:</span>
+                <span class="k">continue</span>
+                
+            <span class="k">for</span> <span class="n">neighbor</span><span class="p">,</span> <span class="n">weight</span> <span class="ow">in</span> <span class="n">graph</span><span class="p">[</span><span class="n">current_node</span><span class="p">]:</span>
+                <span class="n">distance_to_neighbor</span> <span class="o">=</span> <span class="n">current_dist</span> <span class="o">+</span> <span class="nb">float</span><span class="p">(</span><span class="n">weight</span><span class="p">)</span>
+                
+                <span class="k">if</span> <span class="n">distance_to_neighbor</span> <span class="o">&lt;</span> <span class="n">distances</span><span class="p">[</span><span class="n">neighbor</span><span class="p">]:</span>
+                    <span class="n">distances</span><span class="p">[</span><span class="n">neighbor</span><span class="p">]</span> <span class="o">=</span> <span class="n">distance_to_neighbor</span>
+                    <span class="n">heapq</span><span class="o">.</span><span class="n">heappush</span><span class="p">(</span><span class="n">pq</span><span class="p">,</span> <span class="p">(</span><span class="n">distance_to_neighbor</span><span class="p">,</span> <span class="n">neighbor</span><span class="p">))</span>
+        
+        <span class="k">return</span> <span class="n">distances</span>
+    
+    <span class="k">def</span> <span class="nf">_find_optimal_pairing_graph</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> 
+                                  <span class="n">field_candidates</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">],</span> 
+                                  <span class="n">value_candidates</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">],</span>
+                                  <span class="n">graph</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]]],</span>
+                                  <span class="n">page_width</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+                                  <span class="n">page_height</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Find the optimal field-value pair based on spatial proximity.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            field_candidates (List[Dict]): List of field candidates.</span>
+<span class="sd">            value_candidates (List[Dict]): List of value candidates.</span>
+<span class="sd">            graph (Dict[str, List[Tuple[str, float]]]): The spatial graph.</span>
+<span class="sd">            page_width (float): Width of the page.</span>
+<span class="sd">            page_height (float): Height of the page.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Optional[Dict]: Best matching pair with field and value details, or None if no match.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">field_candidates</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">value_candidates</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+        
+        <span class="n">best_match</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="n">min_score</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="s1">&#39;inf&#39;</span><span class="p">)</span>
+        
+        <span class="k">for</span> <span class="n">field</span> <span class="ow">in</span> <span class="n">field_candidates</span><span class="p">:</span>
+            <span class="n">field_distances</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dijkstra</span><span class="p">(</span><span class="n">graph</span><span class="p">,</span> <span class="n">field</span><span class="p">[</span><span class="s2">&quot;block_id&quot;</span><span class="p">])</span>
+            
+            <span class="k">for</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">value_candidates</span><span class="p">:</span>
+                <span class="n">value_distances</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dijkstra</span><span class="p">(</span><span class="n">graph</span><span class="p">,</span> <span class="n">value</span><span class="p">[</span><span class="s2">&quot;block_id&quot;</span><span class="p">])</span>
+                
+                <span class="n">common_nodes</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">field_distances</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span> <span class="o">&amp;</span> <span class="nb">set</span><span class="p">(</span><span class="n">value_distances</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">common_nodes</span><span class="p">:</span>
+                    <span class="k">continue</span>
+                
+                <span class="n">score</span> <span class="o">=</span> <span class="mi">0</span>
+                <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">common_nodes</span><span class="p">:</span>
+                    <span class="n">dist_to_field</span> <span class="o">=</span> <span class="n">field_distances</span><span class="p">[</span><span class="n">node</span><span class="p">]</span>
+                    <span class="n">dist_to_value</span> <span class="o">=</span> <span class="n">value_distances</span><span class="p">[</span><span class="n">node</span><span class="p">]</span>
+                    <span class="n">score</span> <span class="o">+=</span> <span class="p">(</span><span class="n">dist_to_field</span> <span class="o">+</span> <span class="n">dist_to_value</span><span class="p">)</span> <span class="o">/</span> <span class="mi">2</span>
+                
+                <span class="n">score</span> <span class="o">/=</span> <span class="nb">len</span><span class="p">(</span><span class="n">common_nodes</span><span class="p">)</span>
+                
+                <span class="k">if</span> <span class="n">value</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;is_paragraph&quot;</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">value</span><span class="p">[</span><span class="s2">&quot;text&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">())</span> <span class="o">&gt;</span> <span class="mi">10</span><span class="p">:</span>
+                    <span class="n">score</span> <span class="o">*=</span> <span class="mf">0.8</span>
+                
+                <span class="n">normalized_score</span> <span class="o">=</span> <span class="n">score</span> <span class="o">/</span> <span class="nb">min</span><span class="p">(</span><span class="n">page_width</span><span class="p">,</span> <span class="n">page_height</span><span class="p">)</span>
+                
+                <span class="k">if</span> <span class="n">normalized_score</span> <span class="o">&lt;</span> <span class="n">min_score</span><span class="p">:</span>
+                    <span class="n">min_score</span> <span class="o">=</span> <span class="n">normalized_score</span>
+                    <span class="n">best_match</span> <span class="o">=</span> <span class="p">{</span>
+                        <span class="s2">&quot;field_bbox&quot;</span><span class="p">:</span> <span class="p">[</span><span class="nb">float</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">field</span><span class="p">[</span><span class="s2">&quot;bbox&quot;</span><span class="p">]],</span>
+                        <span class="s2">&quot;value_bbox&quot;</span><span class="p">:</span> <span class="p">[</span><span class="nb">float</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">value</span><span class="p">[</span><span class="s2">&quot;bbox&quot;</span><span class="p">]],</span>
+                        <span class="s2">&quot;confidence&quot;</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="nb">min</span><span class="p">(</span><span class="n">normalized_score</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">)),</span>
+                        <span class="s2">&quot;is_paragraph&quot;</span><span class="p">:</span> <span class="n">value</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;is_paragraph&quot;</span><span class="p">,</span> <span class="kc">False</span><span class="p">),</span>
+                        <span class="s2">&quot;matched_text&quot;</span><span class="p">:</span> <span class="n">value</span><span class="p">[</span><span class="s2">&quot;text&quot;</span><span class="p">],</span>
+                        <span class="s2">&quot;field_text&quot;</span><span class="p">:</span> <span class="n">field</span><span class="p">[</span><span class="s2">&quot;text&quot;</span><span class="p">]</span>
+                    <span class="p">}</span>
+        
+        <span class="k">return</span> <span class="n">best_match</span>
+    
+    <span class="k">def</span> <span class="nf">_get_bbox_center</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">bbox</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">float</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Calculate the center of a bounding box.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            bbox (List[float]): Bounding box coordinates [x0, y0, x1, y1].</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Tuple[float, float]: Center coordinates (x, y).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">(</span><span class="nb">float</span><span class="p">((</span><span class="n">bbox</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="n">bbox</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span> <span class="o">/</span> <span class="mi">2</span><span class="p">),</span> <span class="nb">float</span><span class="p">((</span><span class="n">bbox</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">bbox</span><span class="p">[</span><span class="mi">3</span><span class="p">])</span> <span class="o">/</span> <span class="mi">2</span><span class="p">))</span>
+
+    <span class="k">def</span> <span class="nf">_save_field_image</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">doc</span><span class="p">:</span> <span class="n">fitz</span><span class="o">.</span><span class="n">Document</span><span class="p">,</span> <span class="n">page_num</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">bbox</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">float</span><span class="p">],</span> 
+                         <span class="n">company_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">field_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">display_page_num</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Save an image of a bounding box region from a PDF page.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            doc (fitz.Document): The PDF document.</span>
+<span class="sd">            page_num (int): Page number (0-based).</span>
+<span class="sd">            bbox (List[float]): Bounding box coordinates [x0, y0, x1, y1].</span>
+<span class="sd">            company_name (str): Name of the company for the filename.</span>
+<span class="sd">            field_name (str): Name of the field for the filename.</span>
+<span class="sd">            display_page_num (int): Page number for display (1-based).</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            str: Path to the saved image file.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">safe_company_name</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;[^a-zA-Z0-9_]&#39;</span><span class="p">,</span> <span class="s1">&#39;_&#39;</span><span class="p">,</span> <span class="n">company_name</span><span class="p">)</span>
+        <span class="n">safe_field_name</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;[^a-zA-Z0-9_]&#39;</span><span class="p">,</span> <span class="s1">&#39;_&#39;</span><span class="p">,</span> <span class="n">field_name</span><span class="p">)</span>
+        <span class="n">filename</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">safe_company_name</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">safe_field_name</span><span class="si">}</span><span class="s2">_page_</span><span class="si">{</span><span class="n">display_page_num</span><span class="si">}</span><span class="s2">.png&quot;</span>
+        <span class="n">filepath</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">output_image_dir</span><span class="p">,</span> <span class="n">filename</span><span class="p">)</span>
+        <span class="n">page</span> <span class="o">=</span> <span class="n">doc</span><span class="p">[</span><span class="n">page_num</span><span class="p">]</span>
+        
+        <span class="n">padded_bbox</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="nb">float</span><span class="p">(</span><span class="nb">max</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">bbox</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">crop_padding</span><span class="p">)),</span>
+            <span class="nb">float</span><span class="p">(</span><span class="nb">max</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">bbox</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">crop_padding</span><span class="p">)),</span>
+            <span class="nb">float</span><span class="p">(</span><span class="nb">min</span><span class="p">(</span><span class="n">page</span><span class="o">.</span><span class="n">rect</span><span class="o">.</span><span class="n">width</span><span class="p">,</span> <span class="n">bbox</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">crop_padding</span><span class="p">)),</span>
+            <span class="nb">float</span><span class="p">(</span><span class="nb">min</span><span class="p">(</span><span class="n">page</span><span class="o">.</span><span class="n">rect</span><span class="o">.</span><span class="n">height</span><span class="p">,</span> <span class="n">bbox</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">crop_padding</span><span class="p">))</span>
+        <span class="p">]</span>
+        
+        <span class="n">rect</span> <span class="o">=</span> <span class="n">fitz</span><span class="o">.</span><span class="n">Rect</span><span class="p">(</span><span class="n">padded_bbox</span><span class="p">)</span>
+        <span class="n">pix</span> <span class="o">=</span> <span class="n">page</span><span class="o">.</span><span class="n">get_pixmap</span><span class="p">(</span><span class="n">matrix</span><span class="o">=</span><span class="n">fitz</span><span class="o">.</span><span class="n">Matrix</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span> <span class="n">clip</span><span class="o">=</span><span class="n">rect</span><span class="p">)</span>
+        <span class="n">pix</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">filepath</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">filepath</span>
+    
+    <span class="k">def</span> <span class="nf">_convert_numpy_types</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Recursively convert NumPy types to Python native types for JSON serialization.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            obj (Any): Object to convert (dict, list, NumPy type, etc.).</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Any: Object with NumPy types converted to Python types.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">integer</span><span class="p">):</span>
+            <span class="k">return</span> <span class="nb">int</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">floating</span><span class="p">):</span>
+            <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">obj</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+            <span class="k">return</span> <span class="p">{</span><span class="n">key</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_convert_numpy_types</span><span class="p">(</span><span class="n">value</span><span class="p">)</span> <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">obj</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="k">return</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_convert_numpy_types</span><span class="p">(</span><span class="n">item</span><span class="p">)</span> <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">obj</span><span class="p">]</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">):</span>
+            <span class="k">return</span> <span class="nb">tuple</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_convert_numpy_types</span><span class="p">(</span><span class="n">item</span><span class="p">)</span> <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">obj</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">obj</span></div>
+
+
+
+<div class="viewcode-block" id="main">
+<a class="viewcode-back" href="../../../wissenai.postprocess.html#wissenai.postprocess.citation.main">[docs]</a>
+<span class="k">def</span> <span class="nf">main</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Demonstrate usage of PDFCitationEngine with a sample PDF and input JSON.</span>
+
+<span class="sd">    Processes a PDF to match fields and values, printing results as JSON and saving images.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">input_json</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="p">{</span>   <span class="s2">&quot;company&quot;</span> <span class="p">:</span> <span class="s2">&quot;test_invoice01&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;fields&quot;</span><span class="p">:</span> <span class="p">[</span>
+                <span class="p">{</span>
+                    <span class="s2">&quot;unique_filed_id&quot;</span><span class="p">:</span> <span class="s2">&quot;625&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;Description&quot;</span><span class="p">:</span> <span class="s2">&quot;TEA&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;page_number&quot;</span><span class="p">:</span> <span class="s2">&quot;3&quot;</span>
+                <span class="p">},</span>
+                <span class="p">{</span>
+                    <span class="s2">&quot;unique_filed_id&quot;</span><span class="p">:</span> <span class="s2">&quot;627&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;HSN CODE&quot;</span><span class="p">:</span> <span class="s2">&quot;996331&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;page_number&quot;</span><span class="p">:</span> <span class="s2">&quot;3&quot;</span>
+                <span class="p">},</span>
+                <span class="p">{</span>
+                    <span class="s2">&quot;unique_filed_id&quot;</span><span class="p">:</span> <span class="s2">&quot;628&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;Company Name&quot;</span><span class="p">:</span> <span class="s2">&quot;BHUSHAN POWER &amp; Steel Limited&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;page_number&quot;</span><span class="p">:</span> <span class="s2">&quot;3&quot;</span>
+                <span class="p">}</span>
+            <span class="p">]</span>
+        <span class="p">},</span>
+        <span class="p">{</span>
+            <span class="s2">&quot;company&quot;</span> <span class="p">:</span> <span class="s2">&quot;test_invoice02&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;fields&quot;</span><span class="p">:</span> <span class="p">[</span>
+                <span class="p">{</span>
+                    <span class="s2">&quot;unique_filed_id&quot;</span><span class="p">:</span> <span class="s2">&quot;629&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;Date&quot;</span><span class="p">:</span> <span class="s2">&quot;24-01_2025&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;page_number&quot;</span><span class="p">:</span> <span class="s2">&quot;3&quot;</span>
+                <span class="p">},</span>
+                <span class="p">{</span>
+                    <span class="s2">&quot;unique_filed_id&quot;</span><span class="p">:</span> <span class="s2">&quot;64324&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;Invoice No&quot;</span><span class="p">:</span> <span class="s2">&quot;129&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;page_number&quot;</span><span class="p">:</span> <span class="s2">&quot;3&quot;</span>
+                <span class="p">},</span>
+                <span class="p">{</span>
+                    <span class="s2">&quot;unique_filed_id&quot;</span><span class="p">:</span> <span class="s2">&quot;62338&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;Total Amount&quot;</span><span class="p">:</span> <span class="s2">&quot;96820&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;page_number&quot;</span><span class="p">:</span> <span class="s2">&quot;3&quot;</span>
+                <span class="p">}</span>
+            <span class="p">]</span>
+        <span class="p">}</span>
+    <span class="p">]</span>
+
+    <span class="n">engine</span> <span class="o">=</span> <span class="n">PDFCitationEngine</span><span class="p">(</span>
+        <span class="n">max_distance_ratio</span><span class="o">=</span><span class="mf">0.7</span><span class="p">,</span>
+        <span class="n">paragraph_threshold</span><span class="o">=</span><span class="mf">1.3</span><span class="p">,</span>
+        <span class="n">min_ocr_confidence</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span>
+        <span class="n">output_image_dir</span><span class="o">=</span><span class="s2">&quot;/shared_disk/kushal/db_str_chunking/new_ws_structured_code/jsw_test_inv/output_03&quot;</span><span class="p">,</span>
+        <span class="n">max_edge_distance</span><span class="o">=</span><span class="mf">150.0</span><span class="p">,</span>
+        <span class="n">crop_padding</span><span class="o">=</span><span class="mf">1.5</span><span class="p">,</span>
+        <span class="n">ocr_engines</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;tesseract&quot;</span><span class="p">,</span> <span class="s2">&quot;paddleocr&quot;</span><span class="p">,</span> <span class="s2">&quot;easyocr&quot;</span><span class="p">],</span>
+        <span class="n">ocr_priority</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;paddleocr&quot;</span><span class="p">]</span>
+    <span class="p">)</span>
+    
+    <span class="n">pdf_path</span> <span class="o">=</span> <span class="s2">&quot;/shared_disk/kushal/db_str_chunking/new_ws_structured_code/jsw_test_inv/BPCHPO6X240001259.pdf&quot;</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">results</span> <span class="o">=</span> <span class="n">engine</span><span class="o">.</span><span class="n">process_pdf</span><span class="p">(</span><span class="n">pdf_path</span><span class="p">,</span> <span class="n">input_json</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">results</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">ensure_ascii</span><span class="o">=</span><span class="kc">False</span><span class="p">))</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Error processing PDF: </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span></div>
+
+
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+    <span class="n">main</span><span class="p">()</span>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Wissen.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

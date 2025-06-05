@@ -1,0 +1,24 @@
+wissenai package
+================
+
+Subpackages
+-----------
+
+.. toctree::
+   :maxdepth: 4
+
+   wissenai.eval
+   wissenai.extract
+   wissenai.identify
+   wissenai.observability
+   wissenai.postprocess
+   wissenai.preprocess
+   wissenai.service
+
+Module contents
+---------------
+
+.. automodule:: wissenai
+   :members:
+   :undoc-members:
+   :show-inheritance:

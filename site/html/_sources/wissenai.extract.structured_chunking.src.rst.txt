@@ -1,0 +1,10 @@
+wissenai.extract.structured\_chunking.src package
+=================================================
+
+Module contents
+---------------
+
+.. automodule:: wissenai.extract.structured_chunking.src
+   :members:
+   :undoc-members:
+   :show-inheritance:

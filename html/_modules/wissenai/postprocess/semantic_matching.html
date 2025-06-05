@@ -1,0 +1,308 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>wissenai.postprocess.semantic_matching &mdash; Doc AI Studio 1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=29a6c3e3"></script>
+      <script src="../../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            Doc AI Studio
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules.html">wissenai</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">Doc AI Studio</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">wissenai.postprocess.semantic_matching</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for wissenai.postprocess.semantic_matching</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">sentence_transformers</span> <span class="kn">import</span> <span class="n">SentenceTransformer</span><span class="p">,</span> <span class="n">util</span>
+<span class="kn">import</span> <span class="nn">torch</span>
+<span class="kn">import</span> <span class="nn">csv</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">re</span>
+<span class="kn">from</span> <span class="nn">transformers</span> <span class="kn">import</span> <span class="n">DistilBertTokenizer</span><span class="p">,</span> <span class="n">DistilBertForQuestionAnswering</span>
+<span class="kn">import</span> <span class="nn">torch</span>
+
+<div class="viewcode-block" id="check_and_extract_interest">
+<a class="viewcode-back" href="../../../wissenai.postprocess.html#wissenai.postprocess.semantic_matching.check_and_extract_interest">[docs]</a>
+<span class="k">def</span> <span class="nf">check_and_extract_interest</span><span class="p">(</span><span class="n">text</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Extracts interest or discounting charge percentage from text using DistilBERT.</span>
+
+<span class="sd">    Checks if the input text contains keywords related to interest or discounting charges.</span>
+<span class="sd">    If found, uses a DistilBERT question-answering model to extract the percentage value.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        text (str): The input text to analyze for interest-related keywords and values.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        str or None: The extracted interest percentage (e.g., &#39;8.50%&#39;) if found, otherwise None.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">keywords</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;Interest&#39;</span><span class="p">,</span> <span class="s1">&#39;Discounting Charges&#39;</span><span class="p">,</span> <span class="s1">&#39;Interest / Discounting Charges&#39;</span><span class="p">,</span> 
+                <span class="s1">&#39; Interest / Discounting Charges&#39;</span><span class="p">,</span> <span class="s1">&#39;INTEREST DISCOUNTING CHARGES&#39;</span><span class="p">,</span> 
+                <span class="s1">&#39;INTEREST / DISCOUNTING CHARGES&#39;</span><span class="p">,</span> <span class="s1">&#39;2ZINTEREST OR DISCOUNTING CHARGES&#39;</span><span class="p">]</span>
+    <span class="k">for</span> <span class="n">keyword</span> <span class="ow">in</span> <span class="n">keywords</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">keyword</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="ow">in</span> <span class="n">text</span><span class="o">.</span><span class="n">lower</span><span class="p">():</span>
+            <span class="n">tokenizer</span> <span class="o">=</span> <span class="n">DistilBertTokenizer</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="s1">&#39;distilbert-base-uncased-distilled-squad&#39;</span><span class="p">)</span>
+            <span class="n">model</span> <span class="o">=</span> <span class="n">DistilBertForQuestionAnswering</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="s1">&#39;distilbert-base-uncased-distilled-squad&#39;</span><span class="p">)</span>
+
+            <span class="n">question</span> <span class="o">=</span> <span class="s2">&quot;What is the interest discounting charge in percentage?&quot;</span> 
+
+            <span class="n">inputs</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="p">(</span><span class="n">question</span><span class="p">,</span> <span class="n">text</span><span class="p">,</span> <span class="n">return_tensors</span><span class="o">=</span><span class="s2">&quot;pt&quot;</span><span class="p">)</span>
+            <span class="k">with</span> <span class="n">torch</span><span class="o">.</span><span class="n">no_grad</span><span class="p">():</span>
+                <span class="n">outputs</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="o">**</span><span class="n">inputs</span><span class="p">)</span>
+
+            <span class="n">answer_start_index</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">outputs</span><span class="o">.</span><span class="n">start_logits</span><span class="p">)</span>
+            <span class="n">answer_end_index</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">outputs</span><span class="o">.</span><span class="n">end_logits</span><span class="p">)</span>
+
+            <span class="n">predict_answer_tokens</span> <span class="o">=</span> <span class="n">inputs</span><span class="o">.</span><span class="n">input_ids</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="n">answer_start_index</span> <span class="p">:</span> <span class="n">answer_end_index</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span>
+            <span class="n">answer</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="n">predict_answer_tokens</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Answer of the Question is :&quot;</span><span class="p">,</span> <span class="n">tokenizer</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="n">predict_answer_tokens</span><span class="p">))</span>
+            <span class="k">return</span> <span class="n">answer</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="kc">None</span></div>
+
+
+<div class="viewcode-block" id="postprocess_interest_value">
+<a class="viewcode-back" href="../../../wissenai.postprocess.html#wissenai.postprocess.semantic_matching.postprocess_interest_value">[docs]</a>
+<span class="k">def</span> <span class="nf">postprocess_interest_value</span><span class="p">(</span><span class="n">text</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Cleans an extracted interest value by removing non-numeric characters.</span>
+
+<span class="sd">    Removes all characters except digits, spaces, dots, and hyphens from the input text</span>
+<span class="sd">    to extract a clean numerical value.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        text (str): The text containing the interest value (e.g., &#39;8.50%&#39;).</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        str or None: The cleaned numerical value (e.g., &#39;8.50&#39;) if non-empty, otherwise None.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">cleaned_text</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;[^\d\s.-]&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">text</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;CLeaned Text for Interest </span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">cleaned_text</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">cleaned_text</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">cleaned_text</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="kc">None</span></div>
+
+
+<div class="viewcode-block" id="process_interest_values">
+<a class="viewcode-back" href="../../../wissenai.postprocess.html#wissenai.postprocess.semantic_matching.process_interest_values">[docs]</a>
+<span class="k">def</span> <span class="nf">process_interest_values</span><span class="p">(</span><span class="n">input_df</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Processes a DataFrame to extract and clean interest values from clauses.</span>
+
+<span class="sd">    Iterates through the DataFrame to extract interest percentages from &#39;Sub-Clause&#39; and</span>
+<span class="sd">    &#39;Matched Clause&#39; columns using check_and_extract_interest, then cleans them using</span>
+<span class="sd">    postprocess_interest_value. Adds the results as new columns.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        input_df (pandas.DataFrame): DataFrame with &#39;Sub-Clause&#39;, &#39;Matched Clause&#39;, and</span>
+<span class="sd">            &#39;Similarity Score&#39; columns.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        pandas.DataFrame: The input DataFrame with two new columns:</span>
+<span class="sd">            &#39;Interest Value in Sub-Clause&#39; and &#39;Interest Value in Matched Clausee&#39;.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">interest_values_sub_clause</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">interest_values_matched_clause</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">columns_to_keep</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;Sub-Clause&#39;</span><span class="p">,</span> <span class="s1">&#39;Matched Clause&#39;</span><span class="p">,</span> <span class="s1">&#39;Similarity Score&#39;</span><span class="p">]</span>
+    <span class="n">df_col</span> <span class="o">=</span> <span class="n">input_df</span><span class="p">[</span><span class="n">columns_to_keep</span><span class="p">]</span>        
+    <span class="k">for</span> <span class="n">row_index</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">input_df</span><span class="p">)):</span>
+        <span class="n">new_df_interest</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">df_col</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="n">row_index</span><span class="p">])</span><span class="o">.</span><span class="n">transpose</span><span class="p">()</span>
+        <span class="n">column1</span> <span class="o">=</span> <span class="s1">&#39;Sub-Clause&#39;</span>
+        <span class="n">column2</span> <span class="o">=</span> <span class="s1">&#39;Matched Clause&#39;</span>
+        <span class="n">text1</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">new_df_interest</span><span class="p">[</span><span class="n">column1</span><span class="p">])</span>
+        <span class="n">text2</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">new_df_interest</span><span class="p">[</span><span class="n">column2</span><span class="p">])</span>
+
+        <span class="n">interest_value_text1</span> <span class="o">=</span> <span class="n">check_and_extract_interest</span><span class="p">(</span><span class="n">text1</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Interest Value in Text1:&quot;</span><span class="p">,</span> <span class="n">interest_value_text1</span><span class="p">)</span>
+        
+        <span class="k">if</span> <span class="n">interest_value_text1</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">interest_value_text1_postprocess</span> <span class="o">=</span> <span class="n">postprocess_interest_value</span><span class="p">(</span><span class="n">interest_value_text1</span><span class="p">)</span>
+                <span class="n">interest_values_sub_clause</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">interest_value_text1_postprocess</span><span class="p">)</span>
+            <span class="k">except</span><span class="p">:</span>
+                <span class="n">interest_values_sub_clause</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s1">&#39;NIL&#39;</span><span class="p">)</span> 
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">interest_values_sub_clause</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s1">&#39;NIL&#39;</span><span class="p">)</span>
+
+        <span class="n">interest_value_text2</span> <span class="o">=</span> <span class="n">check_and_extract_interest</span><span class="p">(</span><span class="n">text2</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Interest Value in Text2 :&quot;</span><span class="p">,</span> <span class="n">interest_value_text2</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">interest_value_text2</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">interest_value_text2_postprocess</span> <span class="o">=</span> <span class="n">postprocess_interest_value</span><span class="p">(</span><span class="n">interest_value_text2</span><span class="p">)</span>
+                <span class="n">interest_values_matched_clause</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">interest_value_text2_postprocess</span><span class="p">)</span>
+            <span class="k">except</span><span class="p">:</span>
+                <span class="n">interest_values_matched_clause</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s1">&#39;NIL&#39;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">interest_values_matched_clause</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s1">&#39;NIL&#39;</span><span class="p">)</span>
+
+    <span class="n">input_df</span><span class="p">[</span><span class="s1">&#39;Interest Value in Sub-Clause&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">interest_values_sub_clause</span>
+    <span class="n">input_df</span><span class="p">[</span><span class="s1">&#39;Interest Value in Matched Clausee&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">interest_values_matched_clause</span>
+
+    <span class="k">return</span> <span class="n">input_df</span></div>
+
+
+<div class="viewcode-block" id="generate_csv_output">
+<a class="viewcode-back" href="../../../wissenai.postprocess.html#wissenai.postprocess.semantic_matching.generate_csv_output">[docs]</a>
+<span class="k">def</span> <span class="nf">generate_csv_output</span><span class="p">(</span><span class="n">query_sentences</span><span class="p">,</span> <span class="n">passages</span><span class="p">,</span> <span class="n">pdf_file</span><span class="p">,</span> <span class="n">output_directory</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Generates a CSV file with matched clauses and interest values from PDF passages.</span>
+
+<span class="sd">    Compares predefined query sentences against passages using a sentence transformer model</span>
+<span class="sd">    to find semantic matches. Extracts interest values from matched clauses and saves results</span>
+<span class="sd">    to a CSV file.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        query_sentences (list): List of known sentences to be matched against the sentences in passages.</span>
+<span class="sd">        passages (list): List of text passages extracted from a PDF.</span>
+<span class="sd">        pdf_file (str): Path to the input PDF file, used to name the output CSV.</span>
+<span class="sd">        output_directory (str): Directory where the output CSV will be saved.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        tuple: A tuple containing:</span>
+<span class="sd">            - str: Path to the generated CSV file.</span>
+<span class="sd">            - pandas.DataFrame: DataFrame with matched clauses and interest values.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        ValueError: If query_sentences or passages are empty.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">pdf_filename</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">splitext</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">pdf_file</span><span class="p">))[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">model</span> <span class="o">=</span> <span class="n">SentenceTransformer</span><span class="p">(</span><span class="s1">&#39;all-mpnet-base-v2&#39;</span><span class="p">)</span>
+    <span class="n">threshold</span> <span class="o">=</span> <span class="mf">0.6</span>
+
+    <span class="c1">#query_sentences = [</span>
+    <span class="c1">#    &quot;1. Mentioning LC Number(No) on commercial invoice and BOE(Bill of Exchange) is sufficient.&quot;,</span>
+    <span class="c1">#    &quot;2-Interest / Discounting Charges  @ 8.50%  for …. days plus document charges for Rs.2000/- per BOE and Stamp Duty (if applicable) will be charged along with statutory levies i.e GST (@ rate applicable) &amp; TCS @ 0.1% (if applicable) through a Debit Note / Invoice to be attached along with the same Bill of Exchange (BoE) to be raised under this LC. .&quot;,</span>
+    <span class="c1">#    &quot;3. All Discrepancies in the Bills of Exchange to be to be raised under this LC or accompanying documents has been accepted both by LC Opening Bank &amp; Applicants for negotiation and final payment on due date.&quot;,</span>
+    <span class="c1">#    &quot;4. Notwithstanding any provisions or clauses contained in this LC , pre-acceptance of any documents by LC Opening Bank or Applicants is not required for negotiation and final payment on due date.&quot;,</span>
+    <span class="c1">#    &quot;5. On due date payment will be effected as per instructions of negotiating bank.&quot;,</span>
+    <span class="c1">#    &quot;6. Any documents showing description of goods which is commonly accepted in interchangeable terms in steel industry for description of goods in Lc are acceptable&quot;,</span>
+    <span class="c1">#    &quot;7. Any advance received can be deducted from the total value of the invoice to be discounted against this credit.&quot;,</span>
+    <span class="c1">#    &quot;8. This LC is without recourse to drawer.&quot;,</span>
+    <span class="c1">#    &quot;9. As place of expiry is at the counters of negotiating bank, it is sufficient to present the    Bill of Exchange and its accompanying documents to negotiating bank before date of LC expiry and  the  documents  will not  be  refused  on the  ground that  the  documents  received after  the date of  expiry .&quot;,</span>
+    <span class="c1">#    &quot;10. Any Purchase order(PO) number mentioned on Invoices are acceptable&quot;,</span>
+    <span class="c1">#    &quot;11. In case of dispatch to any third party (Ship to), LC to specify the name and address of Ship to Party &quot;,</span>
+    <span class="c1">#    &quot;12. Only for information material as per Purchase Order no ……. (Or -Sales Contract no ……..  )&quot;,</span>
+    <span class="c1">#    &quot;13. IF BoE raised under this LC is couriered by Negotiating Bank to LC opening bank and gets delayed due to postal delay in this CORONA period, LC opening bank agrees to convey their acceptance of the BoE raised under UCPDC 600, based on soft copy of the BoE sent by negotiating bank through their official mail followed by SFMS message with details mentioned below: 1. Mail ID from which mail sent. 2. Mail l  dated 3.Subject of mail 4. LC  number and amount 5. LC Beneficiary 6.LC Applicant 7.BOE raised amount&quot;</span>
+    <span class="c1">#]</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">query_sentences</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">passages</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s2">&quot;Query or passage sentences are empty. Please provide valid input.&quot;</span>
+
+    <span class="n">results</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">query_sentence</span> <span class="ow">in</span> <span class="n">query_sentences</span><span class="p">:</span>
+        <span class="n">query_embedding</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="n">query_sentence</span><span class="p">)</span>
+        <span class="n">highest_similarity_score</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+        <span class="n">most_matched_sentence</span> <span class="o">=</span> <span class="s1">&#39;missing&#39;</span>
+        <span class="k">for</span> <span class="n">passage_sentence</span> <span class="ow">in</span> <span class="n">passages</span><span class="p">:</span>
+            <span class="n">passage_embedding</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="n">passage_sentence</span><span class="p">)</span>
+            <span class="n">similarity_score</span> <span class="o">=</span> <span class="n">util</span><span class="o">.</span><span class="n">dot_score</span><span class="p">(</span><span class="n">query_embedding</span><span class="p">,</span> <span class="n">passage_embedding</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">similarity_score</span> <span class="o">&gt;</span> <span class="n">highest_similarity_score</span><span class="p">:</span>
+                <span class="n">highest_similarity_score</span> <span class="o">=</span> <span class="n">similarity_score</span><span class="o">.</span><span class="n">item</span><span class="p">()</span>
+                <span class="n">most_matched_sentence</span> <span class="o">=</span> <span class="n">passage_sentence</span>
+        <span class="k">if</span> <span class="n">highest_similarity_score</span> <span class="o">&gt;=</span> <span class="n">threshold</span><span class="p">:</span>
+            <span class="n">result_label</span> <span class="o">=</span> <span class="n">most_matched_sentence</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">result_label</span> <span class="o">=</span> <span class="s1">&#39;missing&#39;</span>
+            <span class="n">highest_similarity_score</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s1">&#39;Sub-Clause&#39;</span><span class="p">:</span> <span class="n">query_sentence</span><span class="p">,</span>
+            <span class="s1">&#39;Matched Clause&#39;</span><span class="p">:</span> <span class="n">result_label</span><span class="p">,</span>
+            <span class="s1">&#39;Similarity Score&#39;</span><span class="p">:</span> <span class="nb">round</span><span class="p">(</span><span class="n">highest_similarity_score</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+        <span class="p">}</span>
+        <span class="n">results</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+
+    <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">results</span><span class="p">,</span> <span class="n">columns</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;Sub-Clause&#39;</span><span class="p">,</span> <span class="s1">&#39;Matched Clause&#39;</span><span class="p">,</span> <span class="s1">&#39;Similarity Score&#39;</span><span class="p">])</span>
+    <span class="n">new_df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="n">new_df_interest</span> <span class="o">=</span> <span class="n">process_interest_values</span><span class="p">(</span><span class="n">new_df</span><span class="p">)</span>
+    
+    <span class="n">output_csv</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">output_directory</span><span class="p">,</span> <span class="sa">f</span><span class="s1">&#39;LC_</span><span class="si">{</span><span class="n">pdf_filename</span><span class="si">}</span><span class="s1">_Matching_Output.csv&#39;</span><span class="p">)</span>
+    <span class="n">new_df_interest</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span><span class="n">output_csv</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s1">&#39;utf-8&#39;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;New DF Interested&quot;</span><span class="p">,</span> <span class="n">new_df_interest</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Extracted Data from LC saved in &#39;</span><span class="si">{</span><span class="n">output_csv</span><span class="si">}</span><span class="s2">&#39;&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">output_csv</span><span class="p">,</span> <span class="n">new_df_interest</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Wissen.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

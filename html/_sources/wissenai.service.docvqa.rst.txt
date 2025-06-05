@@ -1,0 +1,61 @@
+wissenai.service.docvqa package
+===============================
+
+Subpackages
+-----------
+
+.. toctree::
+   :maxdepth: 4
+
+   wissenai.service.docvqa.config
+
+Submodules
+----------
+
+wissenai.service.docvqa.app module
+----------------------------------
+
+.. automodule:: wissenai.service.docvqa.app
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+wissenai.service.docvqa.app\_fastapi module
+-------------------------------------------
+
+.. automodule:: wissenai.service.docvqa.app_fastapi
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+wissenai.service.docvqa.db\_mongo module
+----------------------------------------
+
+.. automodule:: wissenai.service.docvqa.db_mongo
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+wissenai.service.docvqa.pdf\_to\_image module
+---------------------------------------------
+
+.. automodule:: wissenai.service.docvqa.pdf_to_image
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+wissenai.service.docvqa.storage\_resolver module
+------------------------------------------------
+
+.. automodule:: wissenai.service.docvqa.storage_resolver
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Module contents
+---------------
+
+.. automodule:: wissenai.service.docvqa
+   :members:
+   :undoc-members:
+   :show-inheritance:

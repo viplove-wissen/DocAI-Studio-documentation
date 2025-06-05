@@ -1,0 +1,45 @@
+wissenai.preprocess package
+===========================
+
+Subpackages
+-----------
+
+.. toctree::
+   :maxdepth: 4
+
+   wissenai.preprocess.vision
+
+Submodules
+----------
+
+wissenai.preprocess.pdf\_miner\_process module
+----------------------------------------------
+
+.. automodule:: wissenai.preprocess.pdf_miner_process
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+wissenai.preprocess.searchable\_pdf module
+------------------------------------------
+
+.. automodule:: wissenai.preprocess.searchable_pdf
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+wissenai.preprocess.utils module
+--------------------------------
+
+.. automodule:: wissenai.preprocess.utils
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Module contents
+---------------
+
+.. automodule:: wissenai.preprocess
+   :members:
+   :undoc-members:
+   :show-inheritance:

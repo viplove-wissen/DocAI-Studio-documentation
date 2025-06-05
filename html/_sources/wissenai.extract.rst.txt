@@ -1,0 +1,31 @@
+wissenai.extract package
+========================
+
+Subpackages
+-----------
+
+.. toctree::
+   :maxdepth: 4
+
+   wissenai.extract.structured_chunking
+   wissenai.extract.tables
+   wissenai.extract.vqa
+
+Submodules
+----------
+
+wissenai.extract.knowledge\_metadata module
+-------------------------------------------
+
+.. automodule:: wissenai.extract.knowledge_metadata
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Module contents
+---------------
+
+.. automodule:: wissenai.extract
+   :members:
+   :undoc-members:
+   :show-inheritance:

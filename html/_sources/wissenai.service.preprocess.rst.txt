@@ -1,0 +1,29 @@
+wissenai.service.preprocess package
+===================================
+
+Submodules
+----------
+
+wissenai.service.preprocess.app\_components module
+--------------------------------------------------
+
+.. automodule:: wissenai.service.preprocess.app_components
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+wissenai.service.preprocess.searchable\_pdf\_api module
+-------------------------------------------------------
+
+.. automodule:: wissenai.service.preprocess.searchable_pdf_api
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Module contents
+---------------
+
+.. automodule:: wissenai.service.preprocess
+   :members:
+   :undoc-members:
+   :show-inheritance:

@@ -1,0 +1,381 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>wissenai.eval.llm_eval &mdash; Doc AI Studio 1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=29a6c3e3"></script>
+      <script src="../../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            Doc AI Studio
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules.html">wissenai</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">Doc AI Studio</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">wissenai.eval.llm_eval</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for wissenai.eval.llm_eval</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Package that provides helper functions to evaluate LLM applications. It covers metrics from several frameworks </span>
+<span class="sd">such as RAGAS, Deepeval, Bert Score, BLEU and ROGUE score from evaluate module</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">from</span> <span class="nn">datasets</span> <span class="kn">import</span> <span class="n">Dataset</span>
+<span class="kn">from</span> <span class="nn">ragas</span> <span class="kn">import</span> <span class="n">evaluate</span> <span class="k">as</span> <span class="n">evaluate_ragas</span>
+<span class="kn">from</span> <span class="nn">ragas.metrics</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">faithfulness</span><span class="p">,</span>
+    <span class="n">answer_relevancy</span><span class="p">,</span>
+    <span class="n">context_recall</span><span class="p">,</span>
+    <span class="n">context_precision</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span> <span class="nn">deepeval</span> <span class="kn">import</span> <span class="n">evaluate</span>
+<span class="kn">from</span> <span class="nn">deepeval.metrics</span> <span class="kn">import</span> <span class="n">HallucinationMetric</span>
+<span class="kn">from</span> <span class="nn">deepeval.metrics</span> <span class="kn">import</span> <span class="n">BiasMetric</span>
+<span class="kn">from</span> <span class="nn">deepeval.test_case</span> <span class="kn">import</span> <span class="n">LLMTestCase</span>
+<span class="kn">from</span> <span class="nn">deepeval.metrics</span> <span class="kn">import</span> <span class="n">ToxicityMetric</span>
+<span class="kn">from</span> <span class="nn">deepeval.metrics</span> <span class="kn">import</span> <span class="n">SummarizationMetric</span>
+<span class="kn">import</span> <span class="nn">evaluate</span>
+<span class="kn">from</span> <span class="nn">bert_score</span> <span class="kn">import</span> <span class="n">BERTScorer</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">List</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Dict</span>
+
+<div class="viewcode-block" id="eval_rag_auto">
+<a class="viewcode-back" href="../../../wissenai.eval.html#wissenai.eval.llm_eval.eval_rag_auto">[docs]</a>
+<span class="k">def</span> <span class="nf">eval_rag_auto</span><span class="p">(</span><span class="n">query</span><span class="p">:</span><span class="nb">str</span><span class="p">,</span> <span class="n">answer</span><span class="p">:</span><span class="nb">str</span><span class="p">,</span> <span class="n">contexts</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]])</span><span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Evaluate RAG application for two RAGAS metrics that DOES NOT require Ground Truth to be provided.</span>
+<span class="sd">    These metrics are mathematical and use LLM to make computations by reprompting LLM for specific data.</span>
+<span class="sd">    Faithfulness: This measures the factual consistency of the generated answer against the given context</span>
+<span class="sd">    Answer Relevancy: focuses on assessing how pertinent the generated answer is to the given prompt</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        query (str): Query from user</span>
+<span class="sd">        answer (str): Final output from the RAG pipeline from the LLM</span>
+<span class="sd">        contexts (List[List[str]]): top N contexts retrieved from the vector database by retriever</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Tuple[float, float]: A tuple containing two float values:</span>
+<span class="sd">            - The faithfulness score (float).</span>
+<span class="sd">            - The answer relevancy score (float).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># To dict</span>
+    <span class="n">data</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;question&quot;</span><span class="p">:</span> <span class="p">[</span><span class="n">query</span><span class="p">],</span>
+        <span class="s2">&quot;answer&quot;</span><span class="p">:</span> <span class="p">[</span><span class="n">answer</span><span class="p">],</span>
+        <span class="s2">&quot;contexts&quot;</span><span class="p">:</span> <span class="n">contexts</span>
+    <span class="p">}</span>
+    <span class="c1"># Convert dict to dataset</span>
+    <span class="n">dataset</span> <span class="o">=</span> <span class="n">Dataset</span><span class="o">.</span><span class="n">from_dict</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="n">evaluate_ragas</span><span class="p">(</span>
+    <span class="n">dataset</span> <span class="o">=</span> <span class="n">dataset</span><span class="p">,</span> 
+    <span class="n">metrics</span><span class="o">=</span><span class="p">[</span>
+        <span class="n">faithfulness</span><span class="p">,</span>
+        <span class="n">answer_relevancy</span><span class="p">,</span>
+    <span class="p">],</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="n">result</span><span class="p">[</span><span class="s1">&#39;faithfulness&#39;</span><span class="p">],</span><span class="n">result</span><span class="p">[</span><span class="s1">&#39;answer_relevancy&#39;</span><span class="p">]</span></div>
+
+
+<div class="viewcode-block" id="eval_rag_groundtruth">
+<a class="viewcode-back" href="../../../wissenai.eval.html#wissenai.eval.llm_eval.eval_rag_groundtruth">[docs]</a>
+<span class="k">def</span> <span class="nf">eval_rag_groundtruth</span><span class="p">(</span><span class="n">query</span><span class="p">:</span><span class="nb">str</span><span class="p">,</span> <span class="n">answer</span><span class="p">:</span><span class="nb">str</span><span class="p">,</span> <span class="n">contexts</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]],</span> <span class="n">ground_truth</span><span class="p">:</span><span class="nb">str</span><span class="p">)</span><span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Evaluate RAG applications for two RAGAS metrics that require Ground Truth to be provided.</span>
+<span class="sd">    These metrics are mathematical and use LLM to make computations by reprompting LLM for specific data.</span>
+<span class="sd">    Context Precision: metric that evaluates whether all of the ground-truth relevant items present in the contexts are ranked higher or not. </span>
+<span class="sd">    Ideally all the relevant chunks must appear at the top ranks.</span>
+<span class="sd">    Context recall: measures the extent to which the retrieved context aligns with the annotated answer, </span>
+<span class="sd">    treated as the ground truth</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        query (str): Query from user</span>
+<span class="sd">        answer (str): Final output from the RAG pipeline from the LLM</span>
+<span class="sd">        contexts (List[List[str]]): top N contexts retrieved from the vector database by retriever</span>
+<span class="sd">        ground_truth (str): Actual answer to the given question from user</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Tuple[float, float]: A tuple containing two float values:</span>
+<span class="sd">            - The context_precision score (float).</span>
+<span class="sd">            - The  context_recall score (float).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">data</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;question&quot;</span><span class="p">:</span> <span class="p">[</span><span class="n">query</span><span class="p">],</span>
+        <span class="s2">&quot;answer&quot;</span><span class="p">:</span> <span class="p">[</span><span class="n">answer</span><span class="p">],</span>
+        <span class="s2">&quot;contexts&quot;</span><span class="p">:</span> <span class="n">contexts</span><span class="p">,</span>
+        <span class="s2">&quot;ground_truth&quot;</span><span class="p">:</span> <span class="p">[</span><span class="n">ground_truth</span><span class="p">]</span>
+    <span class="p">}</span>
+    <span class="c1"># Convert dict to dataset</span>
+    <span class="n">dataset</span> <span class="o">=</span> <span class="n">Dataset</span><span class="o">.</span><span class="n">from_dict</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="n">evaluate_ragas</span><span class="p">(</span>
+    <span class="n">dataset</span> <span class="o">=</span> <span class="n">dataset</span><span class="p">,</span> 
+    <span class="n">metrics</span><span class="o">=</span><span class="p">[</span>
+        <span class="n">context_precision</span><span class="p">,</span>
+        <span class="n">context_recall</span><span class="p">,</span>
+    <span class="p">],</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="n">result</span><span class="p">[</span><span class="s1">&#39;context_precision&#39;</span><span class="p">],</span><span class="n">result</span><span class="p">[</span><span class="s1">&#39;context_recall&#39;</span><span class="p">]</span></div>
+
+
+
+
+<div class="viewcode-block" id="eval_rag_bulk">
+<a class="viewcode-back" href="../../../wissenai.eval.html#wissenai.eval.llm_eval.eval_rag_bulk">[docs]</a>
+<span class="k">def</span> <span class="nf">eval_rag_bulk</span><span class="p">(</span><span class="n">questions</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">answers</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">contexts</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]],</span> <span class="n">ground_truths</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">float</span><span class="p">]]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Evaluate RAG applications in bulk for two RAGAS metrics that require Ground Truth.</span>
+<span class="sd">    These metrics are mathematical and use LLM to make computations by reprompting LLM for specific data.</span>
+<span class="sd">    Includes all of the 4 RAGAS metrics defined in eval_rag_auto and eval_rag_groundtruth</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        questions (List[str]): List of queries from the user.</span>
+<span class="sd">        answers (List[str]): List of final outputs from the RAG pipeline from the LLM.</span>
+<span class="sd">        contexts (List[List[List[str]]]): List of top N contexts retrieved from the vector database by retriever, for each question.</span>
+<span class="sd">        ground_truths (List[str]): List of actual ground truth answers for the given questions.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Pandas Dataframe containing, questions, answers and corresponding eval scores</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="c1"># Create a dictionary of the data for bulk evaluation</span>
+    <span class="n">data</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;question&quot;</span><span class="p">:</span> <span class="n">questions</span><span class="p">,</span>
+        <span class="s2">&quot;answer&quot;</span><span class="p">:</span> <span class="n">answers</span><span class="p">,</span>
+        <span class="s2">&quot;contexts&quot;</span><span class="p">:</span> <span class="n">contexts</span><span class="p">,</span>
+        <span class="s2">&quot;ground_truth&quot;</span><span class="p">:</span> <span class="n">ground_truths</span>
+    <span class="p">}</span>
+
+    <span class="c1"># Convert the dictionary into a Dataset</span>
+    <span class="n">dataset</span> <span class="o">=</span> <span class="n">Dataset</span><span class="o">.</span><span class="n">from_dict</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+
+    <span class="c1"># Evaluate the dataset using RAGAS metrics</span>
+
+    <span class="n">result</span> <span class="o">=</span> <span class="n">evaluate_ragas</span><span class="p">(</span>
+        <span class="n">dataset</span><span class="o">=</span><span class="n">dataset</span><span class="p">,</span>
+        <span class="n">metrics</span><span class="o">=</span><span class="p">[</span>
+            <span class="n">context_precision</span><span class="p">,</span>
+            <span class="n">context_recall</span><span class="p">,</span>
+            <span class="n">faithfulness</span><span class="p">,</span>
+            <span class="n">answer_relevancy</span><span class="p">,</span>
+        <span class="p">],</span>
+    <span class="p">)</span>
+    <span class="n">df</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">to_pandas</span><span class="p">()</span>
+    <span class="c1"># Extract the results for context precision and context recall</span>
+    <span class="k">return</span> <span class="n">df</span></div>
+
+
+
+<div class="viewcode-block" id="eval_rag_risks_auto">
+<a class="viewcode-back" href="../../../wissenai.eval.html#wissenai.eval.llm_eval.eval_rag_risks_auto">[docs]</a>
+<span class="k">def</span> <span class="nf">eval_rag_risks_auto</span><span class="p">(</span><span class="n">query</span><span class="p">:</span><span class="nb">str</span><span class="p">,</span> <span class="n">answer</span><span class="p">:</span><span class="nb">str</span><span class="p">,</span> <span class="n">contexts</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">])</span><span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span><span class="nb">float</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Evaluate RAG application or LLM outputs in general against 3 DeepEval metrics that Does NOT require</span>
+<span class="sd">    ground truth to be provided. These metrics are mathematical and use LLM to make computations by</span>
+<span class="sd">    reprompting LLM for specific data.</span>
+<span class="sd">    Hallucination: A metric determines whether your LLM generates factually correct information by comparing the actual_output to the provided context</span>
+<span class="sd">    Bias: A metric determines whether your LLM output contains gender, racial, or political bias</span>
+<span class="sd">    Toxicity: A metric that evaluates toxicness in your LLM outputs such as Personal attacks, mockery, Hate, Dismissive statements</span>
+<span class="sd">    Args:</span>
+<span class="sd">        query (str): Query from user</span>
+<span class="sd">        answer (str): Final output from the RAG pipeline from the LLM</span>
+<span class="sd">        contexts (List[str]): top N contexts retrieved from the vector database by retriever</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Tuple[float, float,float]: A tuple containing three float values:</span>
+<span class="sd">        -Hallucination score</span>
+<span class="sd">        -Bias score</span>
+<span class="sd">        -Toxicity score</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">test_case</span> <span class="o">=</span> <span class="n">LLMTestCase</span><span class="p">(</span>
+        <span class="nb">input</span><span class="o">=</span><span class="n">query</span><span class="p">,</span>
+        <span class="n">actual_output</span><span class="o">=</span><span class="n">answer</span><span class="p">,</span>
+        <span class="n">context</span><span class="o">=</span><span class="n">contexts</span>
+    <span class="p">)</span>
+    <span class="n">hallucinaion_metric</span> <span class="o">=</span> <span class="n">HallucinationMetric</span><span class="p">(</span><span class="n">threshold</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span><span class="n">model</span><span class="o">=</span><span class="s2">&quot;gpt-3.5-turbo&quot;</span><span class="p">,</span><span class="n">include_reason</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">hallucinaion_metric</span><span class="o">.</span><span class="n">measure</span><span class="p">(</span><span class="n">test_case</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;hallucination score is  </span><span class="si">{</span><span class="n">hallucinaion_metric</span><span class="o">.</span><span class="n">score</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">hallucinaion_metric</span><span class="o">.</span><span class="n">reason</span><span class="p">)</span>
+    
+    <span class="n">bias_metric</span> <span class="o">=</span> <span class="n">BiasMetric</span><span class="p">(</span><span class="n">threshold</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span><span class="n">model</span><span class="o">=</span><span class="s2">&quot;gpt-3.5-turbo&quot;</span><span class="p">,</span><span class="n">include_reason</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">bias_metric</span><span class="o">.</span><span class="n">measure</span><span class="p">(</span><span class="n">test_case</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;bias score is </span><span class="si">{</span><span class="n">bias_metric</span><span class="o">.</span><span class="n">score</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">bias_metric</span><span class="o">.</span><span class="n">reason</span><span class="p">)</span>   
+    
+    <span class="n">toxic_metric</span> <span class="o">=</span> <span class="n">ToxicityMetric</span><span class="p">(</span><span class="n">threshold</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span><span class="n">model</span><span class="o">=</span><span class="s2">&quot;gpt-3.5-turbo&quot;</span><span class="p">,</span><span class="n">include_reason</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">toxic_metric</span><span class="o">.</span><span class="n">measure</span><span class="p">(</span><span class="n">test_case</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;toxicity score is</span><span class="si">{</span><span class="n">toxic_metric</span><span class="o">.</span><span class="n">score</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">toxic_metric</span><span class="o">.</span><span class="n">reason</span><span class="p">)</span>
+    
+    <span class="k">return</span> <span class="n">hallucinaion_metric</span><span class="o">.</span><span class="n">score</span><span class="p">,</span><span class="n">bias_metric</span><span class="o">.</span><span class="n">score</span><span class="p">,</span><span class="n">toxic_metric</span><span class="o">.</span><span class="n">score</span></div>
+
+
+<div class="viewcode-block" id="eval_llm_summary_auto">
+<a class="viewcode-back" href="../../../wissenai.eval.html#wissenai.eval.llm_eval.eval_llm_summary_auto">[docs]</a>
+<span class="k">def</span> <span class="nf">eval_llm_summary_auto</span><span class="p">(</span><span class="nb">input</span><span class="p">:</span><span class="nb">str</span><span class="p">,</span> <span class="n">llm_output</span><span class="p">:</span><span class="nb">str</span><span class="p">)</span><span class="o">-&gt;</span><span class="nb">float</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Deep eval metric that evaluates the quality of text summarization performed by LLM</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        input (str): Actual text to be summarized</span>
+<span class="sd">        output (str): Summarized output from LLM</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        float: Summarization score</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">test_case</span> <span class="o">=</span> <span class="n">LLMTestCase</span><span class="p">(</span><span class="nb">input</span><span class="o">=</span><span class="nb">input</span><span class="p">,</span> <span class="n">actual_output</span><span class="o">=</span><span class="n">llm_output</span><span class="p">)</span>
+    <span class="n">metric</span> <span class="o">=</span> <span class="n">SummarizationMetric</span><span class="p">(</span>
+        <span class="n">threshold</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span>
+        <span class="n">model</span><span class="o">=</span><span class="s2">&quot;gpt-3.5-turbo&quot;</span>
+    <span class="p">)</span>
+
+    <span class="n">metric</span><span class="o">.</span><span class="n">measure</span><span class="p">(</span><span class="n">test_case</span><span class="p">)</span>
+    <span class="c1">#print(metric.score)</span>
+    <span class="k">return</span> <span class="n">metric</span><span class="o">.</span><span class="n">score</span></div>
+
+
+<div class="viewcode-block" id="eval_llm_summary_byword">
+<a class="viewcode-back" href="../../../wissenai.eval.html#wissenai.eval.llm_eval.eval_llm_summary_byword">[docs]</a>
+<span class="k">def</span> <span class="nf">eval_llm_summary_byword</span><span class="p">(</span><span class="n">predictions</span><span class="p">:</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span><span class="n">references</span><span class="p">:</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">])</span><span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">],</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Evaluation can be done on RAG outputs or LLM summarization outputs using the two scores BLEU and ROUGE.</span>
+<span class="sd">    These metrics use an algorithm that finds a score which is the word by word difference </span>
+<span class="sd">    between the reference (ground truth) and the LLM output.</span>
+<span class="sd">    BLEU score: measures the similarity between the machine-translated text and the reference translations using n-grams</span>
+<span class="sd">    ROUGE score measures the similarity between the machine-generated summary and the reference summaries using </span>
+<span class="sd">    overlapping n-grams,word sequences that appear in both the machine-generated summary and the reference summaries</span>
+<span class="sd">    Args:</span>
+<span class="sd">        predictions (List[str]):  list of predicted sentences</span>
+<span class="sd">        references (List[str]): list of lists of reference sentences (since each predicted sentence can</span>
+<span class="sd">        have multiple references), reference sentences refer to ground truth</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">    Tuple[Dict[str, float], Dict[str, float]]: Two dictionaries containing the BLEU and ROUGE scores, respectively.</span>
+<span class="sd">    Example output format :</span>
+<span class="sd">    {&#39;bleu&#39;: 1.0, &#39;precisions&#39;: [1.0, 1.0, 1.0, 1.0], &#39;brevity_penalty&#39;: 1.0, &#39;length_ratio&#39;: 1.1666666666666667, &#39;translation_length&#39;: 7, &#39;reference_length&#39;: 6}</span>
+<span class="sd">    {&#39;rouge1&#39;: 1.0, &#39;rouge2&#39;: 1.0, &#39;rougeL&#39;: 1.0, &#39;rougeLsum&#39;: 1.0}</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">bleu</span> <span class="o">=</span> <span class="n">evaluate</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s2">&quot;bleu&quot;</span><span class="p">)</span>
+    <span class="n">rouge</span> <span class="o">=</span> <span class="n">evaluate</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s2">&quot;rouge&quot;</span><span class="p">)</span>
+
+    <span class="c1"># Compute the BLEU score</span>
+    <span class="n">results_bleu</span> <span class="o">=</span> <span class="n">bleu</span><span class="o">.</span><span class="n">compute</span><span class="p">(</span><span class="n">predictions</span><span class="o">=</span><span class="n">predictions</span><span class="p">,</span> <span class="n">references</span><span class="o">=</span><span class="n">references</span><span class="p">)</span>
+
+    <span class="c1"># Compute the ROUGE score</span>
+    <span class="c1">#   original RougeScorer.score has following defn score(self, target, prediction)</span>
+    <span class="c1">#      target: Text containing the target (ground truth) text,or if a list</span>
+    <span class="c1">#       prediction: Text containing the predicted text.</span>
+    <span class="c1">#       hugging face wrapper does score = scorer.score_multi(ref, pred)</span>
+    <span class="n">results_rouge</span> <span class="o">=</span> <span class="n">rouge</span><span class="o">.</span><span class="n">compute</span><span class="p">(</span><span class="n">predictions</span><span class="o">=</span><span class="n">predictions</span><span class="p">,</span> <span class="n">references</span><span class="o">=</span><span class="n">references</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">results_bleu</span><span class="p">,</span> <span class="n">results_rouge</span></div>
+
+
+<div class="viewcode-block" id="eval_llm_summary_byembed">
+<a class="viewcode-back" href="../../../wissenai.eval.html#wissenai.eval.llm_eval.eval_llm_summary_byembed">[docs]</a>
+<span class="k">def</span> <span class="nf">eval_llm_summary_byembed</span><span class="p">(</span><span class="n">reference</span><span class="p">:</span><span class="nb">str</span><span class="p">,</span><span class="n">candidate</span><span class="p">:</span><span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Evaluate the quality of a candidate sentence (model-generated) against a reference sentence (human-provided) </span>
+<span class="sd">    BERTScore, a metric that uses embeddings to assess semantic similarity.</span>
+
+<span class="sd">    BERTScore calculates precision, recall, and F1 score by comparing embeddings of the candidate and reference sentences.</span>
+<span class="sd">    It is better than n-gram based metrics </span>
+<span class="sd">    Args:</span>
+<span class="sd">        reference (str): The human-provided reference sentence (ground truth).</span>
+<span class="sd">        candidate (str): The model-generated candidate sentence to be evaluated.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Dict[str, float]: A dictionary containing the BERTScore values for Precision, Recall, and F1.</span>
+<span class="sd">        </span>
+<span class="sd">        Example return value:</span>
+<span class="sd">        {</span>
+<span class="sd">            &quot;Precision&quot;: 0.8234,</span>
+<span class="sd">            &quot;Recall&quot;: 0.8123,</span>
+<span class="sd">            &quot;F1&quot;: 0.8178</span>
+<span class="sd">        }</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">scorer</span> <span class="o">=</span> <span class="n">BERTScorer</span><span class="p">(</span><span class="n">model_type</span><span class="o">=</span><span class="s1">&#39;bert-base-uncased&#39;</span><span class="p">)</span>
+    <span class="n">P</span><span class="p">,</span> <span class="n">R</span><span class="p">,</span> <span class="n">F1</span> <span class="o">=</span> <span class="n">scorer</span><span class="o">.</span><span class="n">score</span><span class="p">([</span><span class="n">candidate</span><span class="p">],</span> <span class="p">[</span><span class="n">reference</span><span class="p">])</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;BERTScore Precision: </span><span class="si">{</span><span class="n">P</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">, Recall: </span><span class="si">{</span><span class="n">R</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">, F1: </span><span class="si">{</span><span class="n">F1</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="p">{</span>
+        <span class="s2">&quot;Precision&quot;</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">P</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">),</span>
+        <span class="s2">&quot;Recall&quot;</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">R</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">),</span>
+        <span class="s2">&quot;F1&quot;</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">F1</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="p">}</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Wissen.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

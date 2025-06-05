@@ -1,0 +1,21 @@
+wissenai.identify package
+=========================
+
+Submodules
+----------
+
+wissenai.identify.layout\_detection module
+------------------------------------------
+
+.. automodule:: wissenai.identify.layout_detection
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Module contents
+---------------
+
+.. automodule:: wissenai.identify
+   :members:
+   :undoc-members:
+   :show-inheritance:

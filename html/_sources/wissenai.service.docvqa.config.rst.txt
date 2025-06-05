@@ -1,0 +1,29 @@
+wissenai.service.docvqa.config package
+======================================
+
+Submodules
+----------
+
+wissenai.service.docvqa.config.config module
+--------------------------------------------
+
+.. automodule:: wissenai.service.docvqa.config.config
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+wissenai.service.docvqa.config.config\_default module
+-----------------------------------------------------
+
+.. automodule:: wissenai.service.docvqa.config.config_default
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Module contents
+---------------
+
+.. automodule:: wissenai.service.docvqa.config
+   :members:
+   :undoc-members:
+   :show-inheritance:

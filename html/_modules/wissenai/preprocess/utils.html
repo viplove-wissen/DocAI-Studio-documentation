@@ -1,0 +1,643 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>wissenai.preprocess.utils &mdash; Doc AI Studio 1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=29a6c3e3"></script>
+      <script src="../../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            Doc AI Studio
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules.html">wissenai</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">Doc AI Studio</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">wissenai.preprocess.utils</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for wissenai.preprocess.utils</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">PIL</span> <span class="kn">import</span> <span class="n">Image</span> <span class="k">as</span> <span class="n">PILImage</span><span class="p">,</span> <span class="n">ImageEnhance</span><span class="p">,</span> <span class="n">ImageOps</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">cv2</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="c1"># from wand.image import Image as wandimage</span>
+<span class="kn">import</span> <span class="nn">math</span>
+<span class="kn">from</span> <span class="nn">deskew</span> <span class="kn">import</span> <span class="n">determine_skew</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Union</span>
+
+
+<div class="viewcode-block" id="get_file_name_without_extension">
+<a class="viewcode-back" href="../../../wissenai.preprocess.html#wissenai.preprocess.utils.get_file_name_without_extension">[docs]</a>
+<span class="k">def</span> <span class="nf">get_file_name_without_extension</span><span class="p">(</span><span class="n">file_path</span><span class="p">):</span>
+    <span class="n">directory</span><span class="p">,</span> <span class="n">file_name</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">file_path</span><span class="p">)</span>
+    <span class="n">name</span><span class="p">,</span> <span class="n">extension</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">splitext</span><span class="p">(</span><span class="n">file_name</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">name</span></div>
+
+
+
+<div class="viewcode-block" id="load_image">
+<a class="viewcode-back" href="../../../wissenai.preprocess.html#wissenai.preprocess.utils.load_image">[docs]</a>
+<span class="k">def</span> <span class="nf">load_image</span><span class="p">(</span><span class="n">image_path</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Load image using PIL.&quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">PILImage</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">image_path</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="enhance_dpi">
+<a class="viewcode-back" href="../../../wissenai.preprocess.html#wissenai.preprocess.utils.enhance_dpi">[docs]</a>
+<span class="k">def</span> <span class="nf">enhance_dpi</span><span class="p">(</span><span class="n">image</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">image_path</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">new_dpi</span><span class="o">=</span><span class="mi">300</span><span class="p">,</span> <span class="n">old_dpi</span><span class="o">=</span><span class="mi">150</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Enhance the DPI of the image.</span>
+<span class="sd">    Args:</span>
+<span class="sd">            image (byte_stream): binary byte stream of an image</span>
+<span class="sd">            image_path(str): Path to the image for inferencing</span>
+<span class="sd">            new_dpi(int) : what is the new dpi that you want to enhance to</span>
+<span class="sd">        Returns:</span>
+<span class="sd">            PIL image object(PIL)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">image_path</span><span class="p">:</span>
+        <span class="n">image</span> <span class="o">=</span> <span class="n">load_image</span><span class="p">(</span><span class="n">image_path</span><span class="p">)</span>
+    <span class="n">scaling_factor</span> <span class="o">=</span> <span class="n">new_dpi</span> <span class="o">/</span> <span class="n">old_dpi</span>
+
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">image</span><span class="p">,</span> <span class="n">PILImage</span><span class="o">.</span><span class="n">Image</span><span class="p">):</span>
+        <span class="n">new_size</span> <span class="o">=</span> <span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">image</span><span class="o">.</span><span class="n">width</span> <span class="o">*</span> <span class="n">scaling_factor</span><span class="p">),</span> <span class="nb">int</span><span class="p">(</span><span class="n">image</span><span class="o">.</span><span class="n">height</span> <span class="o">*</span> <span class="n">scaling_factor</span><span class="p">))</span>
+        <span class="n">resized_image</span> <span class="o">=</span> <span class="n">image</span><span class="o">.</span><span class="n">resize</span><span class="p">(</span><span class="n">new_size</span><span class="p">,</span> <span class="n">PILImage</span><span class="o">.</span><span class="n">LANCZOS</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">resized_image</span>
+
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">image</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
+        <span class="n">height</span><span class="p">,</span> <span class="n">width</span> <span class="o">=</span> <span class="n">image</span><span class="o">.</span><span class="n">shape</span><span class="p">[:</span><span class="mi">2</span><span class="p">]</span>
+        <span class="n">new_size</span> <span class="o">=</span> <span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">width</span> <span class="o">*</span> <span class="n">scaling_factor</span><span class="p">),</span> <span class="nb">int</span><span class="p">(</span><span class="n">height</span> <span class="o">*</span> <span class="n">scaling_factor</span><span class="p">))</span>
+        <span class="n">resized_image</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">resize</span><span class="p">(</span><span class="n">image</span><span class="p">,</span> <span class="n">new_size</span><span class="p">,</span> <span class="n">interpolation</span><span class="o">=</span><span class="n">cv2</span><span class="o">.</span><span class="n">INTER_LANCZOS4</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">resized_image</span>
+
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;Unsupported image type. Expected PIL.Image.Image or numpy.ndarray.&quot;</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="convert_to_binary">
+<a class="viewcode-back" href="../../../wissenai.preprocess.html#wissenai.preprocess.utils.convert_to_binary">[docs]</a>
+<span class="k">def</span> <span class="nf">convert_to_binary</span><span class="p">(</span><span class="n">image</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">image_path</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Convert image to binary format using thresholding.</span>
+<span class="sd">    Args:</span>
+<span class="sd">            image (byte_stream): binary byte stream of an image</span>
+<span class="sd">            image_path(str): Path to the image for inferencing</span>
+<span class="sd">        Returns:</span>
+<span class="sd">            PIL image object(PIL)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">image_path</span><span class="p">:</span>
+        <span class="n">image</span> <span class="o">=</span> <span class="n">load_image</span><span class="p">(</span><span class="n">image_path</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">image</span><span class="p">,</span> <span class="n">PILImage</span><span class="o">.</span><span class="n">Image</span><span class="p">):</span>
+        <span class="n">gray_image</span> <span class="o">=</span> <span class="n">ImageOps</span><span class="o">.</span><span class="n">grayscale</span><span class="p">(</span><span class="n">image</span><span class="p">)</span>
+        <span class="n">binary_image</span> <span class="o">=</span> <span class="n">gray_image</span><span class="o">.</span><span class="n">point</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="mi">0</span> <span class="k">if</span> <span class="n">x</span> <span class="o">&lt;</span> <span class="mi">128</span> <span class="k">else</span> <span class="mi">255</span><span class="p">,</span> <span class="s1">&#39;1&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">binary_image</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">image</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
+        <span class="n">gray_image</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">cvtColor</span><span class="p">(</span><span class="n">image</span><span class="p">,</span> <span class="n">cv2</span><span class="o">.</span><span class="n">COLOR_BGR2GRAY</span><span class="p">)</span>
+        <span class="n">_</span><span class="p">,</span> <span class="n">binary_image</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">threshold</span><span class="p">(</span><span class="n">gray_image</span><span class="p">,</span> <span class="mi">128</span><span class="p">,</span> <span class="mi">255</span><span class="p">,</span> <span class="n">cv2</span><span class="o">.</span><span class="n">THRESH_BINARY</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">binary_image</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;Unsupported image type. Expected PIL.Image.Image or numpy.ndarray.&quot;</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="adaptive_threshold">
+<a class="viewcode-back" href="../../../wissenai.preprocess.html#wissenai.preprocess.utils.adaptive_threshold">[docs]</a>
+<span class="k">def</span> <span class="nf">adaptive_threshold</span><span class="p">(</span><span class="n">image</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">image_path</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Apply adaptive thresholding to the image.</span>
+<span class="sd">    Args:</span>
+<span class="sd">            image (byte_stream): binary byte stream of an image</span>
+<span class="sd">            image_path(str): Path to the image for inferencing</span>
+<span class="sd">    Returns:</span>
+<span class="sd">            PIL image object(PIL)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">image_path</span><span class="p">:</span>
+        <span class="n">image</span> <span class="o">=</span> <span class="n">load_image</span><span class="p">(</span><span class="n">image_path</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">image</span><span class="p">,</span> <span class="n">PILImage</span><span class="o">.</span><span class="n">Image</span><span class="p">):</span>
+        <span class="n">gray_image</span> <span class="o">=</span> <span class="n">ImageOps</span><span class="o">.</span><span class="n">grayscale</span><span class="p">(</span><span class="n">image</span><span class="p">)</span>
+        <span class="n">numpy_image</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">gray_image</span><span class="p">)</span>
+        <span class="n">threshold_image</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">adaptiveThreshold</span><span class="p">(</span><span class="n">numpy_image</span><span class="p">,</span> <span class="mi">255</span><span class="p">,</span> <span class="n">cv2</span><span class="o">.</span><span class="n">ADAPTIVE_THRESH_GAUSSIAN_C</span><span class="p">,</span> <span class="n">cv2</span><span class="o">.</span><span class="n">THRESH_BINARY</span><span class="p">,</span> <span class="mi">11</span><span class="p">,</span>
+                                                <span class="mi">2</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">PILImage</span><span class="o">.</span><span class="n">fromarray</span><span class="p">(</span><span class="n">threshold_image</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">image</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">image</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">==</span> <span class="mi">3</span><span class="p">:</span>
+            <span class="n">gray_image</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">cvtColor</span><span class="p">(</span><span class="n">image</span><span class="p">,</span> <span class="n">cv2</span><span class="o">.</span><span class="n">COLOR_BGR2GRAY</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">gray_image</span> <span class="o">=</span> <span class="n">image</span>
+        <span class="n">threshold_image</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">adaptiveThreshold</span><span class="p">(</span><span class="n">gray_image</span><span class="p">,</span> <span class="mi">255</span><span class="p">,</span> <span class="n">cv2</span><span class="o">.</span><span class="n">ADAPTIVE_THRESH_GAUSSIAN_C</span><span class="p">,</span> <span class="n">cv2</span><span class="o">.</span><span class="n">THRESH_BINARY</span><span class="p">,</span> <span class="mi">11</span><span class="p">,</span>
+                                                <span class="mi">2</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">threshold_image</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;Unsupported image type. Expected PIL.Image.Image or numpy.ndarray.&quot;</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="noise_removal">
+<a class="viewcode-back" href="../../../wissenai.preprocess.html#wissenai.preprocess.utils.noise_removal">[docs]</a>
+<span class="k">def</span> <span class="nf">noise_removal</span><span class="p">(</span><span class="n">image</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">image_path</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Remove noise from the image.</span>
+<span class="sd">    Args:</span>
+<span class="sd">            image (byte_stream): binary byte stream of an image</span>
+<span class="sd">            image_path(str): Path to the image for inferencing</span>
+<span class="sd">    Returns:</span>
+<span class="sd">            PIL image object(PIL)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">image_path</span><span class="p">:</span>
+        <span class="n">image</span> <span class="o">=</span> <span class="n">load_image</span><span class="p">(</span><span class="n">image_path</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">image</span><span class="p">,</span> <span class="n">PILImage</span><span class="o">.</span><span class="n">Image</span><span class="p">):</span>
+        <span class="n">numpy_image</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">image</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">image</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
+        <span class="n">numpy_image</span> <span class="o">=</span> <span class="n">image</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;Unsupported image type. Expected PIL.Image.Image or numpy.ndarray.&quot;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">numpy_image</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>  <span class="c1"># Check if the image is grayscale</span>
+        <span class="n">denoised_image</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">fastNlMeansDenoising</span><span class="p">(</span><span class="n">numpy_image</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="mi">30</span><span class="p">,</span> <span class="mi">7</span><span class="p">,</span> <span class="mi">21</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">denoised_image</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">fastNlMeansDenoisingColored</span><span class="p">(</span><span class="n">numpy_image</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="mi">30</span><span class="p">,</span> <span class="mi">7</span><span class="p">,</span> <span class="mi">21</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">PILImage</span><span class="o">.</span><span class="n">fromarray</span><span class="p">(</span><span class="n">denoised_image</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="enhance_contrast">
+<a class="viewcode-back" href="../../../wissenai.preprocess.html#wissenai.preprocess.utils.enhance_contrast">[docs]</a>
+<span class="k">def</span> <span class="nf">enhance_contrast</span><span class="p">(</span><span class="n">image</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">image_path</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Enhance the contrast of the image.</span>
+<span class="sd">    Args:</span>
+<span class="sd">            image (byte_stream): binary byte stream of an image</span>
+<span class="sd">            image_path(str): Path to the image for inferencing</span>
+<span class="sd">    Returns:</span>
+<span class="sd">            PIL image object(PIL)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">image_path</span><span class="p">:</span>
+        <span class="n">image</span> <span class="o">=</span> <span class="n">load_image</span><span class="p">(</span><span class="n">image_path</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">image</span><span class="p">,</span> <span class="n">PILImage</span><span class="o">.</span><span class="n">Image</span><span class="p">):</span>
+        <span class="n">enhancer</span> <span class="o">=</span> <span class="n">ImageEnhance</span><span class="o">.</span><span class="n">Contrast</span><span class="p">(</span><span class="n">image</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">enhancer</span><span class="o">.</span><span class="n">enhance</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">image</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
+        <span class="n">numpy_image</span> <span class="o">=</span> <span class="n">image</span>
+        <span class="n">lab</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">cvtColor</span><span class="p">(</span><span class="n">numpy_image</span><span class="p">,</span> <span class="n">cv2</span><span class="o">.</span><span class="n">COLOR_BGR2LAB</span><span class="p">)</span>
+        <span class="n">l</span><span class="p">,</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">lab</span><span class="p">)</span>
+        <span class="n">clahe</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">createCLAHE</span><span class="p">(</span><span class="n">clipLimit</span><span class="o">=</span><span class="mf">3.0</span><span class="p">,</span> <span class="n">tileGridSize</span><span class="o">=</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span> <span class="mi">8</span><span class="p">))</span>
+        <span class="n">cl</span> <span class="o">=</span> <span class="n">clahe</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="n">l</span><span class="p">)</span>
+        <span class="n">limg</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">merge</span><span class="p">((</span><span class="n">cl</span><span class="p">,</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">))</span>
+        <span class="n">contrast_enhanced_image</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">cvtColor</span><span class="p">(</span><span class="n">limg</span><span class="p">,</span> <span class="n">cv2</span><span class="o">.</span><span class="n">COLOR_LAB2BGR</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">contrast_enhanced_image</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;Unsupported image type. Expected PIL.Image.Image or numpy.ndarray.&quot;</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="resize_image">
+<a class="viewcode-back" href="../../../wissenai.preprocess.html#wissenai.preprocess.utils.resize_image">[docs]</a>
+<span class="k">def</span> <span class="nf">resize_image</span><span class="p">(</span><span class="n">image</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">image_path</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="p">(</span><span class="mi">1024</span><span class="p">,</span> <span class="mi">1024</span><span class="p">)):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Resize the image to a given size.</span>
+<span class="sd">    Args:</span>
+<span class="sd">            image (byte_stream): binary byte stream of an image</span>
+<span class="sd">            image_path(str): Path to the image for inferencing</span>
+<span class="sd">            size(tuple): new height and width for the image size</span>
+<span class="sd">    Returns:</span>
+<span class="sd">            PIL image object(PIL)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">image_path</span><span class="p">:</span>
+        <span class="n">image</span> <span class="o">=</span> <span class="n">load_image</span><span class="p">(</span><span class="n">image_path</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">image</span><span class="p">,</span> <span class="n">PILImage</span><span class="o">.</span><span class="n">Image</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">image</span><span class="o">.</span><span class="n">resize</span><span class="p">(</span><span class="n">size</span><span class="p">,</span> <span class="n">PILImage</span><span class="o">.</span><span class="n">LANCZOS</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">image</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">cv2</span><span class="o">.</span><span class="n">resize</span><span class="p">(</span><span class="n">image</span><span class="p">,</span> <span class="n">size</span><span class="p">,</span> <span class="n">interpolation</span><span class="o">=</span><span class="n">cv2</span><span class="o">.</span><span class="n">INTER_LANCZOS4</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;Unsupported image type. Expected PIL.Image.Image or numpy.ndarray.&quot;</span><span class="p">)</span></div>
+
+
+
+<span class="c1"># def deskew_image(page_image_path):</span>
+<span class="c1">#     with wandimage(filename=page_image_path) as img:</span>
+<span class="c1">#         img.deskew(0.3 * img.quantum_range)</span>
+<span class="c1">#         deskewed_image = np.array(img)</span>
+<span class="c1">#     return deskewed_image</span>
+
+
+<div class="viewcode-block" id="edge_detection">
+<a class="viewcode-back" href="../../../wissenai.preprocess.html#wissenai.preprocess.utils.edge_detection">[docs]</a>
+<span class="k">def</span> <span class="nf">edge_detection</span><span class="p">(</span><span class="n">image</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">image_path</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Apply edge detection to the image.</span>
+<span class="sd">    Args:</span>
+<span class="sd">            image (byte_stream): binary byte stream of an image</span>
+<span class="sd">            image_path(str): Path to the image for inferencing</span>
+<span class="sd">    Returns:</span>
+<span class="sd">            PIL image object(PIL)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">image_path</span><span class="p">:</span>
+        <span class="n">image</span> <span class="o">=</span> <span class="n">load_image</span><span class="p">(</span><span class="n">image_path</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">image</span><span class="p">,</span> <span class="n">PILImage</span><span class="o">.</span><span class="n">Image</span><span class="p">):</span>
+        <span class="n">numpy_image</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">image</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">image</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
+        <span class="n">numpy_image</span> <span class="o">=</span> <span class="n">image</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;Unsupported image type. Expected PIL.Image.Image or numpy.ndarray.&quot;</span><span class="p">)</span>
+
+    <span class="n">edges</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">Canny</span><span class="p">(</span><span class="n">numpy_image</span><span class="p">,</span> <span class="mi">100</span><span class="p">,</span> <span class="mi">200</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">PILImage</span><span class="o">.</span><span class="n">fromarray</span><span class="p">(</span><span class="n">edges</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="remove_border">
+<a class="viewcode-back" href="../../../wissenai.preprocess.html#wissenai.preprocess.utils.remove_border">[docs]</a>
+<span class="k">def</span> <span class="nf">remove_border</span><span class="p">(</span><span class="n">image</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">image_path</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Remove borders from the image.</span>
+<span class="sd">    Args:</span>
+<span class="sd">            image (byte_stream): binary byte stream of an image</span>
+<span class="sd">            image_path(str): Path to the image for inferencing</span>
+<span class="sd">    Returns:</span>
+<span class="sd">            PIL image object(PIL)&quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">image_path</span><span class="p">:</span>
+        <span class="n">image</span> <span class="o">=</span> <span class="n">load_image</span><span class="p">(</span><span class="n">image_path</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">image</span><span class="p">,</span> <span class="n">PILImage</span><span class="o">.</span><span class="n">Image</span><span class="p">):</span>
+        <span class="n">numpy_image</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">image</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">image</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
+        <span class="n">numpy_image</span> <span class="o">=</span> <span class="n">image</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;Unsupported image type. Expected PIL.Image.Image or numpy.ndarray.&quot;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">numpy_image</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+        <span class="n">gray</span> <span class="o">=</span> <span class="n">numpy_image</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">gray</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">cvtColor</span><span class="p">(</span><span class="n">numpy_image</span><span class="p">,</span> <span class="n">cv2</span><span class="o">.</span><span class="n">COLOR_BGR2GRAY</span><span class="p">)</span>
+
+    <span class="n">result</span> <span class="o">=</span> <span class="n">numpy_image</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="n">thresh</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">threshold</span><span class="p">(</span><span class="n">gray</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">255</span><span class="p">,</span> <span class="n">cv2</span><span class="o">.</span><span class="n">THRESH_BINARY_INV</span> <span class="o">+</span> <span class="n">cv2</span><span class="o">.</span><span class="n">THRESH_OTSU</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span>
+
+    <span class="c1"># Remove vertical lines</span>
+    <span class="n">vertical_kernel</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">getStructuringElement</span><span class="p">(</span><span class="n">cv2</span><span class="o">.</span><span class="n">MORPH_RECT</span><span class="p">,</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">20</span><span class="p">))</span>
+    <span class="n">remove_vertical</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">morphologyEx</span><span class="p">(</span><span class="n">thresh</span><span class="p">,</span> <span class="n">cv2</span><span class="o">.</span><span class="n">MORPH_OPEN</span><span class="p">,</span> <span class="n">vertical_kernel</span><span class="p">,</span> <span class="n">iterations</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+    <span class="n">cnts</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">findContours</span><span class="p">(</span><span class="n">remove_vertical</span><span class="p">,</span> <span class="n">cv2</span><span class="o">.</span><span class="n">RETR_EXTERNAL</span><span class="p">,</span> <span class="n">cv2</span><span class="o">.</span><span class="n">CHAIN_APPROX_SIMPLE</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">cnts</span><span class="p">:</span>
+        <span class="n">cv2</span><span class="o">.</span><span class="n">drawContours</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="p">[</span><span class="n">c</span><span class="p">],</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="p">(</span><span class="mi">255</span><span class="p">,</span> <span class="mi">255</span><span class="p">,</span> <span class="mi">255</span><span class="p">),</span> <span class="mi">5</span><span class="p">)</span>
+
+    <span class="c1"># Remove horizontal lines</span>
+    <span class="n">horizontal_kernel</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">getStructuringElement</span><span class="p">(</span><span class="n">cv2</span><span class="o">.</span><span class="n">MORPH_RECT</span><span class="p">,</span> <span class="p">(</span><span class="mi">40</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+    <span class="n">remove_horizontal</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">morphologyEx</span><span class="p">(</span><span class="n">thresh</span><span class="p">,</span> <span class="n">cv2</span><span class="o">.</span><span class="n">MORPH_OPEN</span><span class="p">,</span> <span class="n">horizontal_kernel</span><span class="p">,</span> <span class="n">iterations</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+    <span class="n">cnts</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">findContours</span><span class="p">(</span><span class="n">remove_horizontal</span><span class="p">,</span> <span class="n">cv2</span><span class="o">.</span><span class="n">RETR_EXTERNAL</span><span class="p">,</span> <span class="n">cv2</span><span class="o">.</span><span class="n">CHAIN_APPROX_SIMPLE</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">cnts</span><span class="p">:</span>
+        <span class="n">cv2</span><span class="o">.</span><span class="n">drawContours</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="p">[</span><span class="n">c</span><span class="p">],</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="p">(</span><span class="mi">255</span><span class="p">,</span> <span class="mi">255</span><span class="p">,</span> <span class="mi">255</span><span class="p">),</span> <span class="mi">5</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">PILImage</span><span class="o">.</span><span class="n">fromarray</span><span class="p">(</span><span class="n">result</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="thinning">
+<a class="viewcode-back" href="../../../wissenai.preprocess.html#wissenai.preprocess.utils.thinning">[docs]</a>
+<span class="k">def</span> <span class="nf">thinning</span><span class="p">(</span><span class="n">image</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">image_path</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Apply thinning to the image using morphological operations.</span>
+<span class="sd">    Args:</span>
+<span class="sd">            image (byte_stream): binary byte stream of an image</span>
+<span class="sd">            image_path(str): Path to the image for inferencing</span>
+<span class="sd">    Returns:</span>
+<span class="sd">            PIL image object(PIL)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">image_path</span><span class="p">:</span>
+        <span class="n">image</span> <span class="o">=</span> <span class="n">load_image</span><span class="p">(</span><span class="n">image_path</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">image</span><span class="p">,</span> <span class="n">PILImage</span><span class="o">.</span><span class="n">Image</span><span class="p">):</span>
+        <span class="n">numpy_image</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">image</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">image</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
+        <span class="n">numpy_image</span> <span class="o">=</span> <span class="n">image</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;Unsupported image type. Expected PIL.Image.Image or numpy.ndarray.&quot;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">numpy_image</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+        <span class="n">gray</span> <span class="o">=</span> <span class="n">numpy_image</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">gray</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">cvtColor</span><span class="p">(</span><span class="n">numpy_image</span><span class="p">,</span> <span class="n">cv2</span><span class="o">.</span><span class="n">COLOR_BGR2GRAY</span><span class="p">)</span>
+
+    <span class="n">_</span><span class="p">,</span> <span class="n">binary_image</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">threshold</span><span class="p">(</span><span class="n">gray</span><span class="p">,</span> <span class="mi">127</span><span class="p">,</span> <span class="mi">255</span><span class="p">,</span> <span class="n">cv2</span><span class="o">.</span><span class="n">THRESH_BINARY</span><span class="p">)</span>
+
+    <span class="c1"># Morphological thinning</span>
+    <span class="n">size</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="n">binary_image</span><span class="p">)</span>
+    <span class="n">skeleton</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">binary_image</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">)</span>
+
+    <span class="n">element</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">getStructuringElement</span><span class="p">(</span><span class="n">cv2</span><span class="o">.</span><span class="n">MORPH_CROSS</span><span class="p">,</span> <span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">3</span><span class="p">))</span>
+    <span class="n">done</span> <span class="o">=</span> <span class="kc">False</span>
+
+    <span class="k">while</span> <span class="ow">not</span> <span class="n">done</span><span class="p">:</span>
+        <span class="n">eroded</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">erode</span><span class="p">(</span><span class="n">binary_image</span><span class="p">,</span> <span class="n">element</span><span class="p">)</span>
+        <span class="n">temp</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">dilate</span><span class="p">(</span><span class="n">eroded</span><span class="p">,</span> <span class="n">element</span><span class="p">)</span>
+        <span class="n">temp</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">subtract</span><span class="p">(</span><span class="n">binary_image</span><span class="p">,</span> <span class="n">temp</span><span class="p">)</span>
+        <span class="n">skeleton</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">bitwise_or</span><span class="p">(</span><span class="n">skeleton</span><span class="p">,</span> <span class="n">temp</span><span class="p">)</span>
+        <span class="n">binary_image</span> <span class="o">=</span> <span class="n">eroded</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+
+        <span class="n">zeros</span> <span class="o">=</span> <span class="n">size</span> <span class="o">-</span> <span class="n">cv2</span><span class="o">.</span><span class="n">countNonZero</span><span class="p">(</span><span class="n">binary_image</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">zeros</span> <span class="o">==</span> <span class="n">size</span><span class="p">:</span>
+            <span class="n">done</span> <span class="o">=</span> <span class="kc">True</span>
+
+    <span class="k">return</span> <span class="n">PILImage</span><span class="o">.</span><span class="n">fromarray</span><span class="p">(</span><span class="n">skeleton</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="skeletonization">
+<a class="viewcode-back" href="../../../wissenai.preprocess.html#wissenai.preprocess.utils.skeletonization">[docs]</a>
+<span class="k">def</span> <span class="nf">skeletonization</span><span class="p">(</span><span class="n">image</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">image_path</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Apply skeletonization to the image.</span>
+<span class="sd">    Args:</span>
+<span class="sd">            image (byte_stream): binary byte stream of an image</span>
+<span class="sd">            image_path(str): Path to the image for inferencing</span>
+<span class="sd">    Returns:</span>
+<span class="sd">            PIL image object(PIL)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">image_path</span><span class="p">:</span>
+        <span class="n">image</span> <span class="o">=</span> <span class="n">load_image</span><span class="p">(</span><span class="n">image_path</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">image</span><span class="p">,</span> <span class="n">PILImage</span><span class="o">.</span><span class="n">Image</span><span class="p">):</span>
+        <span class="n">numpy_image</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">image</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">image</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
+        <span class="n">numpy_image</span> <span class="o">=</span> <span class="n">image</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;Unsupported image type. Expected PIL.Image.Image or numpy.ndarray.&quot;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">numpy_image</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+        <span class="n">gray</span> <span class="o">=</span> <span class="n">numpy_image</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">gray</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">cvtColor</span><span class="p">(</span><span class="n">numpy_image</span><span class="p">,</span> <span class="n">cv2</span><span class="o">.</span><span class="n">COLOR_BGR2GRAY</span><span class="p">)</span>
+
+    <span class="n">_</span><span class="p">,</span> <span class="n">binary_image</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">threshold</span><span class="p">(</span><span class="n">gray</span><span class="p">,</span> <span class="mi">127</span><span class="p">,</span> <span class="mi">255</span><span class="p">,</span> <span class="n">cv2</span><span class="o">.</span><span class="n">THRESH_BINARY</span><span class="p">)</span>
+    <span class="n">skel</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">binary_image</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">)</span>
+    <span class="n">element</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">getStructuringElement</span><span class="p">(</span><span class="n">cv2</span><span class="o">.</span><span class="n">MORPH_CROSS</span><span class="p">,</span> <span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">3</span><span class="p">))</span>
+    <span class="n">done</span> <span class="o">=</span> <span class="kc">False</span>
+
+    <span class="k">while</span> <span class="ow">not</span> <span class="n">done</span><span class="p">:</span>
+        <span class="n">eroded</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">erode</span><span class="p">(</span><span class="n">binary_image</span><span class="p">,</span> <span class="n">element</span><span class="p">)</span>
+        <span class="n">temp</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">dilate</span><span class="p">(</span><span class="n">eroded</span><span class="p">,</span> <span class="n">element</span><span class="p">)</span>
+        <span class="n">temp</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">subtract</span><span class="p">(</span><span class="n">binary_image</span><span class="p">,</span> <span class="n">temp</span><span class="p">)</span>
+        <span class="n">skel</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">bitwise_or</span><span class="p">(</span><span class="n">skel</span><span class="p">,</span> <span class="n">temp</span><span class="p">)</span>
+        <span class="n">binary_image</span> <span class="o">=</span> <span class="n">eroded</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="n">done</span> <span class="o">=</span> <span class="p">(</span><span class="n">cv2</span><span class="o">.</span><span class="n">countNonZero</span><span class="p">(</span><span class="n">binary_image</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">PILImage</span><span class="o">.</span><span class="n">fromarray</span><span class="p">(</span><span class="n">skel</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="custom_preprocessing">
+<a class="viewcode-back" href="../../../wissenai.preprocess.html#wissenai.preprocess.utils.custom_preprocessing">[docs]</a>
+<span class="k">def</span> <span class="nf">custom_preprocessing</span><span class="p">(</span><span class="n">image</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">image_path</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Apply complex preprocessing including denoising, thresholding, and thinning.&quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">image_path</span><span class="p">:</span>
+        <span class="n">image</span> <span class="o">=</span> <span class="n">load_image</span><span class="p">(</span><span class="n">image_path</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">image</span><span class="p">,</span> <span class="n">PILImage</span><span class="o">.</span><span class="n">Image</span><span class="p">):</span>
+        <span class="n">numpy_image</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">image</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">image</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
+        <span class="n">numpy_image</span> <span class="o">=</span> <span class="n">image</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;Unsupported image type. Expected PIL.Image.Image or numpy.ndarray.&quot;</span><span class="p">)</span>
+
+    <span class="c1"># Convert single-channel image to 3-channel image</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">numpy_image</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>  <span class="c1"># Check if the image is grayscale</span>
+        <span class="n">numpy_image</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">cvtColor</span><span class="p">(</span><span class="n">numpy_image</span><span class="p">,</span> <span class="n">cv2</span><span class="o">.</span><span class="n">COLOR_GRAY2BGR</span><span class="p">)</span>
+
+    <span class="n">dst</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">fastNlMeansDenoisingColored</span><span class="p">(</span><span class="n">numpy_image</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">7</span><span class="p">,</span> <span class="mi">21</span><span class="p">)</span>
+    <span class="n">Istrech</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">convertScaleAbs</span><span class="p">(</span><span class="n">dst</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">beta</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+    <span class="n">roi_gray</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">cvtColor</span><span class="p">(</span><span class="n">Istrech</span><span class="p">,</span> <span class="n">cv2</span><span class="o">.</span><span class="n">COLOR_BGR2GRAY</span><span class="p">)</span>
+    <span class="n">blur</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">GaussianBlur</span><span class="p">(</span><span class="n">roi_gray</span><span class="p">,</span> <span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">3</span><span class="p">),</span> <span class="mi">0</span><span class="p">)</span>
+    <span class="n">_</span><span class="p">,</span> <span class="n">th5</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">threshold</span><span class="p">(</span><span class="n">blur</span><span class="p">,</span> <span class="mi">25</span><span class="p">,</span> <span class="mi">180</span><span class="p">,</span> <span class="n">cv2</span><span class="o">.</span><span class="n">THRESH_BINARY</span> <span class="o">+</span> <span class="n">cv2</span><span class="o">.</span><span class="n">THRESH_OTSU</span><span class="p">)</span>
+
+    <span class="n">bilateral</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">bilateralFilter</span><span class="p">(</span><span class="n">th5</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">75</span><span class="p">,</span> <span class="mi">75</span><span class="p">)</span>
+    <span class="n">adaptive_thresh</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">adaptiveThreshold</span><span class="p">(</span><span class="n">bilateral</span><span class="p">,</span> <span class="mi">255</span><span class="p">,</span> <span class="n">cv2</span><span class="o">.</span><span class="n">ADAPTIVE_THRESH_GAUSSIAN_C</span><span class="p">,</span> <span class="n">cv2</span><span class="o">.</span><span class="n">THRESH_BINARY</span><span class="p">,</span> <span class="mi">11</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+    <span class="n">_</span><span class="p">,</span> <span class="n">Ithres</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">threshold</span><span class="p">(</span><span class="n">adaptive_thresh</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">255</span><span class="p">,</span> <span class="n">cv2</span><span class="o">.</span><span class="n">THRESH_BINARY</span> <span class="o">+</span> <span class="n">cv2</span><span class="o">.</span><span class="n">THRESH_OTSU</span><span class="p">)</span>
+
+    <span class="n">edges</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">Canny</span><span class="p">(</span><span class="n">Ithres</span><span class="p">,</span> <span class="mi">100</span><span class="p">,</span> <span class="mi">200</span><span class="p">)</span>
+    <span class="n">edges</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">dilate</span><span class="p">(</span><span class="n">edges</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="n">iterations</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">edges</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">erode</span><span class="p">(</span><span class="n">edges</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="n">iterations</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+    <span class="c1"># Use morphological operations for thinning as ximgproc is unavailable</span>
+    <span class="n">size</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="n">edges</span><span class="p">)</span>
+    <span class="n">skeleton</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">edges</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">)</span>
+
+    <span class="n">element</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">getStructuringElement</span><span class="p">(</span><span class="n">cv2</span><span class="o">.</span><span class="n">MORPH_CROSS</span><span class="p">,</span> <span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">3</span><span class="p">))</span>
+    <span class="n">done</span> <span class="o">=</span> <span class="kc">False</span>
+
+    <span class="k">while</span> <span class="ow">not</span> <span class="n">done</span><span class="p">:</span>
+        <span class="n">eroded</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">erode</span><span class="p">(</span><span class="n">edges</span><span class="p">,</span> <span class="n">element</span><span class="p">)</span>
+        <span class="n">temp</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">dilate</span><span class="p">(</span><span class="n">eroded</span><span class="p">,</span> <span class="n">element</span><span class="p">)</span>
+        <span class="n">temp</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">subtract</span><span class="p">(</span><span class="n">edges</span><span class="p">,</span> <span class="n">temp</span><span class="p">)</span>
+        <span class="n">skeleton</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">bitwise_or</span><span class="p">(</span><span class="n">skeleton</span><span class="p">,</span> <span class="n">temp</span><span class="p">)</span>
+        <span class="n">edges</span> <span class="o">=</span> <span class="n">eroded</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+
+        <span class="n">zeros</span> <span class="o">=</span> <span class="n">size</span> <span class="o">-</span> <span class="n">cv2</span><span class="o">.</span><span class="n">countNonZero</span><span class="p">(</span><span class="n">edges</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">zeros</span> <span class="o">==</span> <span class="n">size</span><span class="p">:</span>
+            <span class="n">done</span> <span class="o">=</span> <span class="kc">True</span>
+
+    <span class="k">return</span> <span class="n">PILImage</span><span class="o">.</span><span class="n">fromarray</span><span class="p">(</span><span class="n">skeleton</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="preprocessing_pipeline">
+<a class="viewcode-back" href="../../../wissenai.preprocess.html#wissenai.preprocess.utils.preprocessing_pipeline">[docs]</a>
+<span class="k">def</span> <span class="nf">preprocessing_pipeline</span><span class="p">(</span><span class="n">page_image_path</span><span class="p">,</span> <span class="n">output_directory</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Deskew the image and return all intermediate images in PIL format.&quot;&quot;&quot;</span>
+    <span class="n">file_name</span> <span class="o">=</span> <span class="n">get_file_name_without_extension</span><span class="p">(</span><span class="n">page_image_path</span><span class="p">)</span>
+
+    <span class="n">output_images_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">output_directory</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">file_name</span><span class="si">}</span><span class="s2">_output_images&quot;</span><span class="p">)</span>
+    <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">output_images_path</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">intermediate_images</span> <span class="o">=</span> <span class="p">{}</span>
+
+    <span class="c1"># Load the image using PIL</span>
+    <span class="n">original_image</span> <span class="o">=</span> <span class="n">load_image</span><span class="p">(</span><span class="n">page_image_path</span><span class="p">)</span>
+
+    <span class="c1"># Deskew Image</span>
+    <span class="n">deskewed_image</span> <span class="o">=</span> <span class="n">deskew_image</span><span class="p">(</span><span class="n">page_image_path</span><span class="p">)</span>
+    <span class="n">intermediate_images</span><span class="p">[</span><span class="s1">&#39;deskewed_image&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">PILImage</span><span class="o">.</span><span class="n">fromarray</span><span class="p">(</span><span class="n">deskewed_image</span><span class="p">)</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">deskewed_image</span><span class="p">,</span>
+                                                                                             <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="k">else</span> <span class="n">deskewed_image</span>
+
+    <span class="c1"># Enhance DPI</span>
+    <span class="n">enhanced_dpi_image</span> <span class="o">=</span> <span class="n">enhance_dpi</span><span class="p">(</span><span class="n">deskewed_image</span><span class="p">)</span>
+    <span class="n">intermediate_images</span><span class="p">[</span><span class="s1">&#39;enhanced_dpi_image&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">PILImage</span><span class="o">.</span><span class="n">fromarray</span><span class="p">(</span><span class="n">enhanced_dpi_image</span><span class="p">)</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">enhanced_dpi_image</span><span class="p">,</span>
+                                                                                                     <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="k">else</span> <span class="n">enhanced_dpi_image</span>
+
+    <span class="c1"># Convert to binary</span>
+    <span class="n">binary_image</span> <span class="o">=</span> <span class="n">convert_to_binary</span><span class="p">(</span><span class="n">enhanced_dpi_image</span><span class="p">)</span>
+    <span class="n">intermediate_images</span><span class="p">[</span><span class="s1">&#39;binary_image&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">PILImage</span><span class="o">.</span><span class="n">fromarray</span><span class="p">(</span><span class="n">binary_image</span><span class="p">)</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">binary_image</span><span class="p">,</span>
+                                                                                         <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="k">else</span> <span class="n">binary_image</span>
+
+    <span class="c1"># Apply adaptive thresholding</span>
+    <span class="n">threshold_image</span> <span class="o">=</span> <span class="n">adaptive_threshold</span><span class="p">(</span><span class="n">binary_image</span><span class="p">)</span>
+    <span class="n">intermediate_images</span><span class="p">[</span><span class="s1">&#39;adaptive_threshold_image&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">PILImage</span><span class="o">.</span><span class="n">fromarray</span><span class="p">(</span><span class="n">threshold_image</span><span class="p">)</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">threshold_image</span><span class="p">,</span>
+                                                                                                        <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="k">else</span> <span class="n">threshold_image</span>
+
+    <span class="c1"># Remove noise</span>
+    <span class="n">noise_removed_image</span> <span class="o">=</span> <span class="n">noise_removal</span><span class="p">(</span><span class="n">threshold_image</span><span class="p">)</span>
+    <span class="n">intermediate_images</span><span class="p">[</span><span class="s1">&#39;noise_removed_image&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">PILImage</span><span class="o">.</span><span class="n">fromarray</span><span class="p">(</span><span class="n">noise_removed_image</span><span class="p">)</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span>
+        <span class="n">noise_removed_image</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="k">else</span> <span class="n">noise_removed_image</span>
+
+    <span class="c1"># Enhance contrast</span>
+    <span class="n">contrast_enhanced_image</span> <span class="o">=</span> <span class="n">enhance_contrast</span><span class="p">(</span><span class="n">noise_removed_image</span><span class="p">)</span>
+    <span class="n">intermediate_images</span><span class="p">[</span><span class="s1">&#39;contrast_enhanced_image&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">PILImage</span><span class="o">.</span><span class="n">fromarray</span><span class="p">(</span><span class="n">contrast_enhanced_image</span><span class="p">)</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span>
+        <span class="n">contrast_enhanced_image</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="k">else</span> <span class="n">contrast_enhanced_image</span>
+
+    <span class="c1"># Resize image</span>
+    <span class="n">resized_image</span> <span class="o">=</span> <span class="n">resize_image</span><span class="p">(</span><span class="n">contrast_enhanced_image</span><span class="p">)</span>
+    <span class="n">intermediate_images</span><span class="p">[</span><span class="s1">&#39;resized_image&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">PILImage</span><span class="o">.</span><span class="n">fromarray</span><span class="p">(</span><span class="n">resized_image</span><span class="p">)</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">resized_image</span><span class="p">,</span>
+                                                                                           <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="k">else</span> <span class="n">resized_image</span>
+
+    <span class="c1"># Apply edge detection</span>
+    <span class="n">edge_detected_image</span> <span class="o">=</span> <span class="n">edge_detection</span><span class="p">(</span><span class="n">resized_image</span><span class="p">)</span>
+    <span class="n">intermediate_images</span><span class="p">[</span><span class="s1">&#39;edge_detection_image&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">PILImage</span><span class="o">.</span><span class="n">fromarray</span><span class="p">(</span><span class="n">edge_detected_image</span><span class="p">)</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span>
+        <span class="n">edge_detected_image</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="k">else</span> <span class="n">edge_detected_image</span>
+
+    <span class="c1"># Remove borders</span>
+    <span class="n">borderless_image</span> <span class="o">=</span> <span class="n">remove_border</span><span class="p">(</span><span class="n">edge_detected_image</span><span class="p">)</span>
+    <span class="n">intermediate_images</span><span class="p">[</span><span class="s1">&#39;remove_border_image&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">PILImage</span><span class="o">.</span><span class="n">fromarray</span><span class="p">(</span><span class="n">borderless_image</span><span class="p">)</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">borderless_image</span><span class="p">,</span>
+                                                                                                    <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="k">else</span> <span class="n">borderless_image</span>
+
+    <span class="c1"># Apply thinning</span>
+    <span class="n">thinned_image</span> <span class="o">=</span> <span class="n">thinning</span><span class="p">(</span><span class="n">borderless_image</span><span class="p">)</span>
+    <span class="n">intermediate_images</span><span class="p">[</span><span class="s1">&#39;thinned_image&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">PILImage</span><span class="o">.</span><span class="n">fromarray</span><span class="p">(</span><span class="n">thinned_image</span><span class="p">)</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">thinned_image</span><span class="p">,</span>
+                                                                                           <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="k">else</span> <span class="n">thinned_image</span>
+
+    <span class="c1"># Apply skeletonization</span>
+    <span class="n">skeletonized_image</span> <span class="o">=</span> <span class="n">skeletonization</span><span class="p">(</span><span class="n">thinned_image</span><span class="p">)</span>
+    <span class="n">intermediate_images</span><span class="p">[</span><span class="s1">&#39;skeletonized_image&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">PILImage</span><span class="o">.</span><span class="n">fromarray</span><span class="p">(</span><span class="n">skeletonized_image</span><span class="p">)</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">skeletonized_image</span><span class="p">,</span>
+                                                                                                     <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="k">else</span> <span class="n">skeletonized_image</span>
+
+    <span class="c1"># Apply complex preprocessing</span>
+    <span class="n">complex_processed_image</span> <span class="o">=</span> <span class="n">custom_preprocessing</span><span class="p">(</span><span class="n">skeletonized_image</span><span class="p">)</span>
+    <span class="n">intermediate_images</span><span class="p">[</span><span class="s1">&#39;custom_processed_image&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">PILImage</span><span class="o">.</span><span class="n">fromarray</span><span class="p">(</span><span class="n">complex_processed_image</span><span class="p">)</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span>
+        <span class="n">complex_processed_image</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="k">else</span> <span class="n">complex_processed_image</span>
+
+    <span class="c1"># Save intermediate images</span>
+    <span class="n">img_name</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">page_image_path</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">img</span> <span class="ow">in</span> <span class="n">intermediate_images</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="n">output_directory_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">output_images_path</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">.jpeg&quot;</span><span class="p">)</span>
+        <span class="n">img</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">output_directory_path</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">intermediate_images</span><span class="p">,</span> <span class="n">file_name</span><span class="p">,</span> <span class="n">output_images_path</span></div>
+
+
+
+<div class="viewcode-block" id="rotate">
+<a class="viewcode-back" href="../../../wissenai.preprocess.html#wissenai.preprocess.utils.rotate">[docs]</a>
+<span class="k">def</span> <span class="nf">rotate</span><span class="p">(</span>
+        <span class="n">image</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">angle</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">background</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]]</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+    <span class="n">old_width</span><span class="p">,</span> <span class="n">old_height</span> <span class="o">=</span> <span class="n">image</span><span class="o">.</span><span class="n">shape</span><span class="p">[:</span><span class="mi">2</span><span class="p">]</span>
+    <span class="n">angle_radian</span> <span class="o">=</span> <span class="n">math</span><span class="o">.</span><span class="n">radians</span><span class="p">(</span><span class="n">angle</span><span class="p">)</span>
+    <span class="n">width</span> <span class="o">=</span> <span class="nb">abs</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">angle_radian</span><span class="p">)</span> <span class="o">*</span> <span class="n">old_height</span><span class="p">)</span> <span class="o">+</span> <span class="nb">abs</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">angle_radian</span><span class="p">)</span> <span class="o">*</span> <span class="n">old_width</span><span class="p">)</span>
+    <span class="n">height</span> <span class="o">=</span> <span class="nb">abs</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">angle_radian</span><span class="p">)</span> <span class="o">*</span> <span class="n">old_width</span><span class="p">)</span> <span class="o">+</span> <span class="nb">abs</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">angle_radian</span><span class="p">)</span> <span class="o">*</span> <span class="n">old_height</span><span class="p">)</span>
+
+    <span class="n">image_center</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">image</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">::</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span> <span class="o">/</span> <span class="mi">2</span><span class="p">)</span>
+    <span class="n">rot_mat</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">getRotationMatrix2D</span><span class="p">(</span><span class="n">image_center</span><span class="p">,</span> <span class="n">angle</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">)</span>
+    <span class="n">rot_mat</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">]</span> <span class="o">+=</span> <span class="p">(</span><span class="n">width</span> <span class="o">-</span> <span class="n">old_width</span><span class="p">)</span> <span class="o">/</span> <span class="mi">2</span>
+    <span class="n">rot_mat</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">]</span> <span class="o">+=</span> <span class="p">(</span><span class="n">height</span> <span class="o">-</span> <span class="n">old_height</span><span class="p">)</span> <span class="o">/</span> <span class="mi">2</span>
+    <span class="k">return</span> <span class="n">cv2</span><span class="o">.</span><span class="n">warpAffine</span><span class="p">(</span><span class="n">image</span><span class="p">,</span> <span class="n">rot_mat</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="n">height</span><span class="p">)),</span> <span class="nb">int</span><span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="n">width</span><span class="p">))),</span> <span class="n">borderValue</span><span class="o">=</span><span class="n">background</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="de_skew">
+<a class="viewcode-back" href="../../../wissenai.preprocess.html#wissenai.preprocess.utils.de_skew">[docs]</a>
+<span class="k">def</span> <span class="nf">de_skew</span><span class="p">(</span><span class="n">image</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">image_path</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Deskew any image to correct orientaion</span>
+<span class="sd">    Args:</span>
+<span class="sd">            image (byte_stream): binary byte stream of an image</span>
+<span class="sd">            image_path(str): Path to the image for inferencing</span>
+<span class="sd">    Returns:</span>
+<span class="sd">            PIL image object(PIL)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">image_path</span><span class="p">:</span>
+        <span class="n">image</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">imread</span><span class="p">(</span><span class="n">image_path</span><span class="p">)</span>
+    <span class="n">cv2_image</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">image</span><span class="p">)</span>
+    <span class="c1"># Convert RGB to BGR (which OpenCV uses)</span>
+    <span class="n">image</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">cvtColor</span><span class="p">(</span><span class="n">cv2_image</span><span class="p">,</span> <span class="n">cv2</span><span class="o">.</span><span class="n">COLOR_RGB2BGR</span><span class="p">)</span>
+    <span class="n">grayscale</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">cvtColor</span><span class="p">(</span><span class="n">image</span><span class="p">,</span> <span class="n">cv2</span><span class="o">.</span><span class="n">COLOR_BGR2GRAY</span><span class="p">)</span>
+    <span class="n">angle</span> <span class="o">=</span> <span class="n">determine_skew</span><span class="p">(</span><span class="n">grayscale</span><span class="p">)</span>
+    <span class="n">rotated</span> <span class="o">=</span> <span class="n">rotate</span><span class="p">(</span><span class="n">image</span><span class="p">,</span> <span class="n">angle</span><span class="p">,</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">rotated</span></div>
+
+
+<span class="c1"># Example usage</span>
+<span class="c1"># page_image_path = &#39;/shared_disk/kushal/preprocessing_steps/process_directory/input&#39;</span>
+<span class="c1"># output_directory = &#39;/shared_disk/kushal/preprocessing_steps/process_directory/output&#39;</span>
+<span class="c1"># intermediate_images = preprocessing_pipeline(page_image_path, output_directory)</span>
+
+<span class="c1"># print(&quot;intermediate_images::\n&quot;,intermediate_images)</span>
+
+<span class="c1"># for step, img in intermediate_images.items():</span>
+<span class="c1">#     print(f&quot;Step: {step}, Image Size: {img.size}&quot;)</span>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Wissen.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

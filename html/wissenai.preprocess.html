@@ -585,6 +585,23 @@ image_path(str): Path to the image for inferencing</p>
 </dl>
 </dd></dl>
 
+<dl class="py function">
+<dt class="sig sig-object py" id="wissenai.preprocess.utils.crop_rois">
+<span class="sig-prename descclassname"><span class="pre">wissenai.preprocess.utils.</span></span><span class="sig-name descname"><span class="pre">crop_rois</span></span></span><a class="reference internal" href="_modules/wissenai/preprocess/utils.html#thinning"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#wissenai.preprocess.utils.thinning" title="Link to this definition"></a></dt>
+<dd><p>Extract and save individual cards from an image.
+Args:</p>
+<blockquote>
+<div><p>image (numpy.ndarray): Input image as a numpy array
+        image_path (str): Path to the input image
+        min_width (int): Minimum width of detected cards (default: 100)
+        min_height (int): Minimum height of detected cards (default: 100)</p>
+</div></blockquote>
+<dl class="simple">
+<dt>Returns:</dt><dd><p>list: List of cropped card images as numpy arrays</p>
+</dd>
+</dl>
+</dd></dl>
+
 </section>
 <section id="module-wissenai.preprocess">
 <span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-wissenai.preprocess" title="Link to this heading"></a></h2>

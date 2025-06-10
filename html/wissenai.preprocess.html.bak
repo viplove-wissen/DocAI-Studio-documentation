@@ -265,8 +265,8 @@ dpi: Desired dots-per-inch for the final PIL image (default 300).</p>
 <span id="wissenai-preprocess-utils-module"></span><h2>wissenai.preprocess.utils module<a class="headerlink" href="#module-wissenai.preprocess.utils" title="Link to this heading"></a></h2>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="wissenai.preprocess.utils.threshold_advanced">
-<span class="sig-prename descclassname"><span class="pre">wissenai.preprocess.utils.</span></span><span class="sig-name descname"><span class="pre">threshold_advanced</span></span></span><a class="reference internal" href="_modules/wissenai/preprocess/utils.html#adaptive_threshold"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#wissenai.preprocess.utils.adaptive_threshold" title="Link to this definition"></a></dt>
+<dt class="sig sig-object py" id="wissenai.preprocess.utils.get_file_type">
+<span class="sig-prename descclassname"><span class="pre">wissenai.preprocess.utils.</span></span><span class="sig-name descname"><span class="pre">get_file_type</span></span></span><a class="reference internal" href="_modules/wissenai/preprocess/utils.html#adaptive_threshold"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#wissenai.preprocess.utils.adaptive_threshold" title="Link to this definition"></a></dt>
 <dd><p>Detects the file type based on its extension or MIME type.
 Args:</p>
 <blockquote>
@@ -280,21 +280,16 @@ Args:</p>
 </dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="wissenai.preprocess.utils.threshold_advanced">
-<span class="sig-prename descclassname"><span class="pre">wissenai.preprocess.utils.</span></span><span class="sig-name descname"><span class="pre">threshold_advanced</span></span></span><a class="reference internal" href="_modules/wissenai/preprocess/utils.html#adaptive_threshold"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#wissenai.preprocess.utils.adaptive_threshold" title="Link to this definition"></a></dt>
-<dd><p>Convert image to binary (black & white) using adaptive or Otsu's binarization.
+<dt class="sig sig-object py" id="wissenai.preprocess.utils.detect_languages">
+<span class="sig-prename descclassname"><span class="pre">wissenai.preprocess.utils.</span></span><span class="sig-name descname"><span class="pre">detect_languages</span></span></span><a class="reference internal" href="_modules/wissenai/preprocess/utils.html#adaptive_threshold"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#wissenai.preprocess.utils.adaptive_threshold" title="Link to this definition"></a></dt>
+<dd><p>Detects languages from a list of text strings (one per page).
 Args:</p>
 <blockquote>
-<div><p>image (np.ndarray): Input image (BGR or grayscale).
-        method (str): Binarization method - 'adaptive' or 'otsu'.
-        block_size (int): Size of local neighborhood (odd integer) for adaptive method.
-        C (int): Constant subtracted from the mean or weighted mean (adaptive only).</p>
+<div><p>texts (list): List of input texts.
+        min_chars (int): Minimum number of characters for language to be detected</p>
 </div></blockquote>
 <dl class="simple">
-<dt>Returns:</dt><dd><p>np.ndarray: Binarized image (black & white).</p>
-</dl>
-<dl class="simple">
-<dt>Raises:</dt><dd><p>ValueError: For invalid input or unsupported methods.</p>
+<dt>Returns:</dt><dd><p>set: Set of full names of detected languages.</p>
 </dd>
 </dl>
 </dd></dl>

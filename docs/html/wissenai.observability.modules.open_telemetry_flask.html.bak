@@ -96,39 +96,8 @@
 <section id="submodules">
 <h2>Submodules<a class="headerlink" href="#submodules" title="Link to this heading"></a></h2>
 </section>
-<section id="module-wissenai.observability.modules.open_telemetry_flask.config">
-<span id="wissenai-observability-modules-open-telemetry-flask-config-module"></span><h2>wissenai.observability.modules.open_telemetry_flask.config module<a class="headerlink" href="#module-wissenai.observability.modules.open_telemetry_flask.config" title="Link to this heading"></a></h2>
-<dl class="py class">
-<dt class="sig sig-object py" id="wissenai.observability.modules.open_telemetry_flask.config.Config">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">wissenai.observability.modules.open_telemetry_flask.config.</span></span><span class="sig-name descname"><span class="pre">Config</span></span><a class="reference internal" href="_modules/wissenai/observability/modules/open_telemetry_flask/config.html#Config"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#wissenai.observability.modules.open_telemetry_flask.config.Config" title="Link to this definition"></a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
-<dl class="py attribute">
-<dt class="sig sig-object py" id="wissenai.observability.modules.open_telemetry_flask.config.Config.OTEL_EXPORTER_OTLP_ENDPOINT">
-<span class="sig-name descname"><span class="pre">OTEL_EXPORTER_OTLP_ENDPOINT</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'http://localhost:4317'</span></em><a class="headerlink" href="#wissenai.observability.modules.open_telemetry_flask.config.Config.OTEL_EXPORTER_OTLP_ENDPOINT" title="Link to this definition"></a></dt>
-<dd></dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="wissenai.observability.modules.open_telemetry_flask.config.Config.initializeOpenTelemetry">
-<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">initializeOpenTelemetry</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">app</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Flask</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">_SERVICE_NAME</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tracing</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metrics</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logging</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">openlit</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/wissenai/observability/modules/open_telemetry_flask/config.html#Config.initializeOpenTelemetry"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#wissenai.observability.modules.open_telemetry_flask.config.Config.initializeOpenTelemetry" title="Link to this definition"></a></dt>
-<dd><p>Initializes OpenTelemetry configuration for tracing, metrics, and logging.</p>
-<dl class="simple">
-<dt>Args:</dt><dd><p>app (Flask): The Flask application instance to configure.
-_SERVICE_NAME (str): The name of the service for which OpenTelemetry is configured.
-tracing (bool): Flag to enable or disable tracing configuration. Default is True.
-metrics (bool): Flag to enable or disable metrics configuration. Default is True.
-logging (bool): Flag to enable or disable logging configuration. Default is True.
-openlit (bool): Unused parameter in this code. Can be used for additional configurations.</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="wissenai.observability.modules.open_telemetry_flask.config.Config.logger">
-<span class="sig-name descname"><span class="pre">logger</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">&lt;Logger</span> <span class="pre">Preprocessing</span> <span class="pre">(DEBUG)&gt;</span></em><a class="headerlink" href="#wissenai.observability.modules.open_telemetry_flask.config.Config.logger" title="Link to this definition"></a></dt>
-<dd></dd></dl>
-
-</dd></dl>
-
+<section id="wissenai-observability-modules-open-telemetry-flask-config-module">
+<h2>wissenai.observability.modules.open_telemetry_flask.config module<a class="headerlink" href="#wissenai-observability-modules-open-telemetry-flask-config-module" title="Link to this heading"></a></h2>
 </section>
 <section id="module-wissenai.observability.modules.open_telemetry_flask.logger">
 <span id="wissenai-observability-modules-open-telemetry-flask-logger-module"></span><h2>wissenai.observability.modules.open_telemetry_flask.logger module<a class="headerlink" href="#module-wissenai.observability.modules.open_telemetry_flask.logger" title="Link to this heading"></a></h2>
@@ -170,43 +139,8 @@ This function should be called each time a multilingual request is processed.</p
 
 </section>
 <section id="wissenai-observability-modules-open-telemetry-flask-tracing-module">
-<span id="wissenai-observability-modules-open-telemetry-flask-tracing-module"></span><h2>wissenai.observability.modules.open_telemetry_flask.tracing module<a class="headerlink" href="#module-wissenai.observability.modules.open_telemetry_flask.tracing" title="Link to this heading"></a></h2>
-<dl class="py function">
-<dt class="sig sig-object py" id="wissenai.observability.modules.open_telemetry_flask.tracing.configure_tracing">
-<span class="sig-prename descclassname"><span class="pre">wissenai.observability.modules.open_telemetry_flask.tracing.</span></span><span class="sig-name descname"><span class="pre">configure_tracing</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">app</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Flask</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">_SERVICE_NAME</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">OTEL_EXPORTER_OTLP_ENDPOINT</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/wissenai/observability/modules/open_telemetry_flask/tracing.html#configure_tracing"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#wissenai.observability.modules.open_telemetry_.tracing.flask.configure_tracing" title="Link to this definition"></a></dt>
-<dd><p>Configure OpenTelemetry tracing for a Flask application.</p>
-<dl class="simple">
-<dt>Args:</dt><dd><p>app (Flask): The Flask application instance to instrument.
-_SERVICE_NAME (str): The name of the service for which the traces are being generated.
-OTEL_EXPORTER_OTLP_ENDPOINT (str): The endpoint to which the OTLP spans should be exported.</p>
-</dd>
-</dl>
-<ul class="simple">
-<li><p>Sets up a TracerProvider with the specified service name.</p></li>
-<li><p>Configures an OTLPSpanExporter that sends trace data to the specified endpoint.</p></li>
-<li><p>Adds a BatchSpanProcessor to handle exporting spans in batches.</p></li>
-<li><p>Instruments the Flask application to automatically generate trace spans for each request.</p></li>
-</ul>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="wissenai.observability.modules.open_telemetry_flask.tracing.traced">
-<span class="sig-prename descclassname"><span class="pre">wissenai.observability.modules.open_telemetry_flask.tracing.</span></span><span class="sig-name descname"><span class="pre">traced</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">span_name</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/wissenai/observability/modules/open_telemetry_flask/tracing.html#traced"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#wissenai.observability.modules.open_telemetry_flask.tracing.traced" title="Link to this definition"></a></dt>
-<dd><p>A decorator for manually creating and managing trace spans.</p>
-<dl class="simple">
-<dt>Args:</dt><dd><p>span_name (str): The name of the span to be created.</p>
-</dd>
-<dt>Returns:</dt><dd><p>decorator: A function decorator that wraps the target function with tracing logic.</p>
-</dd>
-</dl>
-<ul class="simple">
-<li><p>Creates a new span with the specified name whenever the decorated function is called.</p></li>
-<li><p>Ensures the span is active for the duration of the function execution.</p></li>
-<li><p>The function must be asynchronous (<cite>async def</cite>) as the wrapper is designed for async functions.</p></li>
-</ul>
-</dd></dl>
-
-
+<h2>wissenai.observability.modules.open_telemetry_flask.tracing module<a class="headerlink" href="#wissenai-observability-modules-open-telemetry-flask-tracing-module" title="Link to this heading"></a></h2>
+</section>
 <section id="module-wissenai.observability.modules.open_telemetry_flask">
 <span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-wissenai.observability.modules.open_telemetry_flask" title="Link to this heading"></a></h2>
 </section>

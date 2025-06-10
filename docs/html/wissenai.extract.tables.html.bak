@@ -156,7 +156,68 @@ out_path (_type_, optional): _description_. Defaults to None.</p>
 <span id="wissenai-extract-tables-tatr-tsr-module"></span><h2>wissenai.extract.tables.tatr_tsr module<a class="headerlink" href="#module-wissenai.extract.tables.tatr_tsr" title="Link to this heading"></a></h2>
 <p>Module for table structure recognition using table transformer model.
 Import the function tsr_inference for inferencing, visualization and generating csv output file.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="wissenai.extract.tables.tatr_tsr.CustomPad">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">wissenai.extract.tables.tatr_tsr.</span></span><span class="sig-name descname"><span class="pre">CustomPad</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">padding</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">(10,</span> <span class="pre">10,</span> <span class="pre">10,</span> <span class="pre">10)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">padding_value</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/wissenai/extract/tables/tatr_tsr.html#CustomPad"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#wissenai.extract.tables.tatr_tsr.CustomPad" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+</dd></dl>
 
+<dl class="py class">
+<dt class="sig sig-object py" id="wissenai.extract.tables.tatr_tsr.MaxResize">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">wissenai.extract.tables.tatr_tsr.</span></span><span class="sig-name descname"><span class="pre">MaxResize</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">max_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">800</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/wissenai/extract/tables/tatr_tsr.html#MaxResize"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#wissenai.extract.tables.tatr_tsr.MaxResize" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="wissenai.extract.tables.tatr_tsr.ResizeAndPad">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">wissenai.extract.tables.tatr_tsr.</span></span><span class="sig-name descname"><span class="pre">ResizeAndPad</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">max_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">800</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">padding</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">(10,</span> <span class="pre">10,</span> <span class="pre">10,</span> <span class="pre">10)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">padding_value</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/wissenai/extract/tables/tatr_tsr.html#ResizeAndPad"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#wissenai.extract.tables.tatr_tsr.ResizeAndPad" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="wissenai.extract.tables.tatr_tsr.apply_ocr">
+<span class="sig-prename descclassname"><span class="pre">wissenai.extract.tables.tatr_tsr.</span></span><span class="sig-name descname"><span class="pre">apply_ocr</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cell_coordinates</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">orig_img</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/wissenai/extract/tables/tatr_tsr.html#apply_ocr"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#wissenai.extract.tables.tatr_tsr.apply_ocr" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="wissenai.extract.tables.tatr_tsr.box_cxcywh_to_xyxy">
+<span class="sig-prename descclassname"><span class="pre">wissenai.extract.tables.tatr_tsr.</span></span><span class="sig-name descname"><span class="pre">box_cxcywh_to_xyxy</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/wissenai/extract/tables/tatr_tsr.html#box_cxcywh_to_xyxy"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#wissenai.extract.tables.tatr_tsr.box_cxcywh_to_xyxy" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="wissenai.extract.tables.tatr_tsr.create_structure_transform">
+<span class="sig-prename descclassname"><span class="pre">wissenai.extract.tables.tatr_tsr.</span></span><span class="sig-name descname"><span class="pre">create_structure_transform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">max_size</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/wissenai/extract/tables/tatr_tsr.html#create_structure_transform"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#wissenai.extract.tables.tatr_tsr.create_structure_transform" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="wissenai.extract.tables.tatr_tsr.extract_table_struct">
+<span class="sig-prename descclassname"><span class="pre">wissenai.extract.tables.tatr_tsr.</span></span><span class="sig-name descname"><span class="pre">extract_table_struct</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">image</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Image</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">padding</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_resize</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">Image</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">list</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Image</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/wissenai/extract/tables/tatr_tsr.html#extract_table_struct"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#wissenai.extract.tables.tatr_tsr.extract_table_struct" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="wissenai.extract.tables.tatr_tsr.get_cell_coordinates_by_row">
+<span class="sig-prename descclassname"><span class="pre">wissenai.extract.tables.tatr_tsr.</span></span><span class="sig-name descname"><span class="pre">get_cell_coordinates_by_row</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">table_data</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/wissenai/extract/tables/tatr_tsr.html#get_cell_coordinates_by_row"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#wissenai.extract.tables.tatr_tsr.get_cell_coordinates_by_row" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="wissenai.extract.tables.tatr_tsr.main">
+<span class="sig-prename descclassname"><span class="pre">wissenai.extract.tables.tatr_tsr.</span></span><span class="sig-name descname"><span class="pre">main</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/wissenai/extract/tables/tatr_tsr.html#main"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#wissenai.extract.tables.tatr_tsr.main" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="wissenai.extract.tables.tatr_tsr.outputs_to_objects">
+<span class="sig-prename descclassname"><span class="pre">wissenai.extract.tables.tatr_tsr.</span></span><span class="sig-name descname"><span class="pre">outputs_to_objects</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">outputs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">img_size</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">id2label</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/wissenai/extract/tables/tatr_tsr.html#outputs_to_objects"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#wissenai.extract.tables.tatr_tsr.outputs_to_objects" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="wissenai.extract.tables.tatr_tsr.plot_results">
+<span class="sig-prename descclassname"><span class="pre">wissenai.extract.tables.tatr_tsr.</span></span><span class="sig-name descname"><span class="pre">plot_results</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cells</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">class_to_visualize</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">orig_img</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">visualize_path</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/wissenai/extract/tables/tatr_tsr.html#plot_results"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#wissenai.extract.tables.tatr_tsr.plot_results" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="wissenai.extract.tables.tatr_tsr.rescale_bboxes">
+<span class="sig-prename descclassname"><span class="pre">wissenai.extract.tables.tatr_tsr.</span></span><span class="sig-name descname"><span class="pre">rescale_bboxes</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">out_bbox</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">size</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/wissenai/extract/tables/tatr_tsr.html#rescale_bboxes"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#wissenai.extract.tables.tatr_tsr.rescale_bboxes" title="Link to this definition"></a></dt>
+<dd></dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="wissenai.extract.tables.tatr_tsr.tsr_inference">

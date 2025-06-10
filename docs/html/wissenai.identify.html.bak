@@ -260,6 +260,21 @@ Creates multiple output directories for different types of output.</p>
 </dl>
 </dd></dl>
 
+<dl class="py function">
+<dt class="sig sig-object py" id="wissenai.identify.layout_detection.read_json">
+<span class="sig-prename descclassname"><span class="pre">wissenai.identify.layout_detection.</span></span><span class="sig-name descname"><span class="pre">read_json</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">json_file</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/wissenai/identify/layout_detection.html#read_json"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#wissenai.identify.layout_detection.read_json" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="wissenai.identify.layout_detection.save_cropped_image">
+<span class="sig-prename descclassname"><span class="pre">wissenai.identify.layout_detection.</span></span><span class="sig-name descname"><span class="pre">save_cropped_image</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cropped_image</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">save_path</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/wissenai/identify/layout_detection.html#save_cropped_image"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#wissenai.identify.layout_detection.save_cropped_image" title="Link to this definition"></a></dt>
+<dd><p>Save cropped images to the specified path.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="wissenai.identify.layout_detection.save_table_to_excel">
+<span class="sig-prename descclassname"><span class="pre">wissenai.identify.layout_detection.</span></span><span class="sig-name descname"><span class="pre">save_table_to_excel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">extracted_text</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">table_excel_path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">table_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">page_number</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/wissenai/identify/layout_detection.html#save_table_to_excel"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#wissenai.identify.layout_detection.save_table_to_excel" title="Link to this definition"></a></dt>
+<dd></dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="wissenai.identify.layout_detection.tsr_inference_image">

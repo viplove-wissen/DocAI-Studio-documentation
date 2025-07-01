@@ -532,6 +532,21 @@
   
 </li>
         
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#to-see-the-citation_engine_app-working-click-on-this-video-link" class="md-nav__link">
+    <span class="md-ellipsis">
+      To see the citation_engine_app working, click on this video link
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="To see the citation_engine_app working, click on this video link">
+      <ul class="md-nav__list">
+        
           <li class="md-nav__item">
   <a href="#semantic-matching" class="md-nav__link">
     <span class="md-ellipsis">
@@ -947,6 +962,21 @@
   
 </li>
         
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#to-see-the-citation_engine_app-working-click-on-this-video-link" class="md-nav__link">
+    <span class="md-ellipsis">
+      To see the citation_engine_app working, click on this video link
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="To see the citation_engine_app working, click on this video link">
+      <ul class="md-nav__list">
+        
           <li class="md-nav__item">
   <a href="#semantic-matching" class="md-nav__link">
     <span class="md-ellipsis">
@@ -1053,7 +1083,9 @@
 
 <h1 id="doc-ai-studio-documentation">Doc AI Studio Documentation<a class="headerlink" href="#doc-ai-studio-documentation" title="Permanent link">#</a></h1>
 <h2 id="overview">Overview<a class="headerlink" href="#overview" title="Permanent link">#</a></h2>
-<p><strong>Doc AI Studio</strong> is a comprehensive document processing system tailored for enterprise-level applications. It enables advanced text extraction, table detection, visual question answering (VQA), and large language model (LLM) evaluation, with a focus on scalability and observability. Leveraging state-of-the-art models like YOLOv10, Microsoft's Table Transformer (TATR), and PaddleNLP, it handles various document types, including PDFs and images, to extract structured and unstructured data efficiently. The system includes robust preprocessing tools, layout detection, data extraction, LLM evaluation metrics, and OpenTelemetry-based observability, making it ideal for complex document workflows.</p>
+<p><img alt="Alt text" src="Screenshot%202025-06-12%20123343.png" /></p>
+<p><strong>Doc AI Studio</strong> is a comprehensive document processing system tailored for enterprise-level applications. It enables advanced text extraction, table detection, visual question answering (VQA), and large language model (LLM) evaluation, with a focus on scalability and observability. These elements can be utilised in creating an end to end document extraction application.</p>
+<p>Leveraging state-of-the-art models like YOLOv10, Microsoft's Table Transformer (TATR), and PaddleNLP, it handles various document types, including PDFs and images, to extract structured and unstructured data efficiently. The system includes robust preprocessing tools, layout detection, data extraction, LLM evaluation metrics, and OpenTelemetry-based observability, making it ideal for complex document workflows.</p>
 <div class="toc">
 <ul>
 <li><a href="#doc-ai-studio-documentation">Doc AI Studio Documentation</a><ul>
@@ -1096,6 +1128,9 @@
 </li>
 <li><a href="#post-process">Post-Process</a><ul>
 <li><a href="#citation">Citation</a></li>
+</ul>
+</li>
+<li><a href="#to-see-the-citation_engine_app-working-click-on-this-video-link">To see the citation_engine_app working, click on this video link</a><ul>
 <li><a href="#semantic-matching">Semantic Matching</a></li>
 </ul>
 </li>
@@ -1190,12 +1225,16 @@ docker<span class="w"> </span>run<span class="w"> </span>hello-world
 <span class="nb">cd</span><span class="w"> </span>yolov10
 pip<span class="w"> </span>install<span class="w"> </span>.
 <span class="nb">cd</span><span class="w"> </span>..
+</code></pre></div></p>
+</li>
+<li>
+<p><strong>Set OpenAI API Key for LLM Evaluation</strong>
+   <div class="highlight"><pre><span></span><code><span class="nb">export</span><span class="w"> </span><span class="nv">OPENAI_API_KEY</span><span class="o">=</span><span class="s2">&quot;your-openai-gpt-3.5-t-api-key&quot;</span><span class="w"> </span>
 </code></pre></div>
 <a id="getting-started"></a></p>
 </li>
 </ol>
 <h2 id="getting-started-with-pipeline">Getting Started with pipeline<a class="headerlink" href="#getting-started-with-pipeline" title="Permanent link">#</a></h2>
-<p><img alt="Alt text" src="Screenshot%202025-06-12%20123343.png" /></p>
 <p>A typical document AI appplication consists of certain elements in its pipeline. These elements are as follows:</p>
 <h4 id="1-pre-processing">1. Pre-Processing:<a class="headerlink" href="#1-pre-processing" title="Permanent link">#</a></h4>
 <p>Pre-processing is done to obtain the information of file type, language and reducing the anomalies using image processing.</p>
@@ -1325,27 +1364,29 @@ pip<span class="w"> </span>install<span class="w"> </span>.
 <p>Provides tools for extracted data to be either displayed to user or use it in some downstream task</p>
 <p><a id="citation"></a></p>
 <h4 id="citation">Citation<a class="headerlink" href="#citation" title="Permanent link">#</a></h4>
+<p>Use for highlighting and displaying the field the extractor has extracted. </p>
 <ul>
 <li>Extracts text from searchable and scanned PDFs using PyMuPDF and OCR engines (Tesseract, PaddleOCR, EasyOCR).</li>
 <li>Matches fields and values with fuzzywuzzy for robust handling of text variations.</li>
-<li>Groups text blocks into paragraphs for long-form text matching.</li>
-<li>Uses a spatial graph and Dijkstra’s algorithm to pair fields and values by proximity.</li>
-<li>Saves cropped images of matched regions and optional spatial graph visualizations.</li>
-<li>Configurable OCR engine priority for optimal scanned PDF processing.</li>
-<li>Adjustable settings for OCR confidence, paragraph grouping, and spatial distances.</li>
 <li>Returns JSON with citations, including bounding boxes, confidence scores, and matched text.</li>
 </ul>
+<p>A sample application which does a basic multi page vqa and shows the result via citaion is provided in repository as 'citation_engine_app.py'.
+Citation shows the results on UI so to see this application in action a UI is needed.
+To run the application backend, run the following command:
+<div class="highlight"><pre><span></span><code>uvicorn<span class="w"> </span>citation_engine_app:app<span class="w"> </span>--reload<span class="w"> </span>--host<span class="w"> </span><span class="m">0</span>.0.0.0<span class="w"> </span>--port<span class="w"> </span>&lt;<span class="w"> </span>port_number<span class="w"> </span>&gt;
+</code></pre></div></p>
+<h3 id="to-see-the-citation_engine_app-working-click-on-this-video-link"><a href="https://wissen0.sharepoint.com/:v:/s/DocAI_documentation/ESuZuCJTO3tJsScwOU10ghgBrWYMKgzJGSGjZo_tP9puug?e=EVUr2n">To see the citation_engine_app working, click on this video link</a><a class="headerlink" href="#to-see-the-citation_engine_app-working-click-on-this-video-link" title="Permanent link">#</a></h3>
 <p><a id="semantic-matching"></a></p>
 <h4 id="semantic-matching">Semantic Matching<a class="headerlink" href="#semantic-matching" title="Permanent link">#</a></h4>
+<p>Use for extracting the sentences semantically similar to the reference sentence from the user.</p>
 <ul>
-<li>Matches predefined query sentences (clauses) against PDF text passages using semantic similarity with the all-mpnet-base-v2 sentence transformer model.</li>
-<li>Extracts interest or discounting charge percentages from matched clauses using a DistilBERT question-answering model.</li>
-<li>Cleans extracted numerical values and saves results, including similarity scores and interest values, to a CSV file.</li>
+<li>Matches predefined query sentences against PDF text passages using semantic similarity with the all-mpnet-base-v2 sentence transformer model.</li>
+<li>Returns a dictionary with key as reference sentence and value as the matched sentences.</li>
 </ul>
 <p><a id="observability"></a></p>
 <h3 id="observability"><a href="html/wissenai.observability.html">Observability</a><a class="headerlink" href="#observability" title="Permanent link">#</a></h3>
+<p>Provides OpenTelemetry-based observability for FastAPI or Flask applications:</p>
 <ul>
-<li>Provides OpenTelemetry-based observability for FastAPI or Flask applications:</li>
 <li><strong>Tracing</strong>: Instruments endpoints with OpenTelemetry Tracer and supports custom spans via <code>@traced</code>.</li>
 <li><strong>Metrics</strong>: Exports service metrics to external backends.</li>
 <li><strong>Logging</strong>: Logs to console and file (<code>/var/log/app.log</code>) with customizable formats.</li>
@@ -1366,7 +1407,17 @@ sudo<span class="w"> </span>docker<span class="w"> </span>compose<span class="w"
 </code></pre></div>
 - Powered by Grafana, accessible at <code>localhost:3000</code> after Docker setup.
 - Displays tracing, metrics, and logging data for application monitoring.
-- Login with username: <code>admin</code> and password: <code>admin</code>.</p>
+- Skip at the login screen.</p>
+<p>A sample fast_app.py and flask_app.py for tracing and logging is in the repository.
+To run the app for testing the dashboard run the following command:
+<div class="highlight"><pre><span></span><code><span class="c1"># bash</span>
+
+<span class="c1">## For fast_app.py</span>
+python<span class="w"> </span>fast_app.py
+
+<span class="c1">## For flask_app.py</span>
+python<span class="w"> </span>flask_app.py
+</code></pre></div></p>
 <h3 id="for-more-help-regarding-observability-dashboard-setup-go-through-this-video"><a href="https://wissen0.sharepoint.com/:v:/s/DocAI_documentation/EYSciBckyBBBgaOTYzBorGwBRSeUaQj2KS2wg46mKb6B9g?e=lOJSdU">For more help regarding observability dashboard setup go through this video</a><a class="headerlink" href="#for-more-help-regarding-observability-dashboard-setup-go-through-this-video" title="Permanent link">#</a></h3>
 <p><a id="demo-pipeline"></a></p>
 <h2 id="demo-pipeline">Demo Pipeline<a class="headerlink" href="#demo-pipeline" title="Permanent link">#</a></h2>

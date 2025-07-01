@@ -106,7 +106,7 @@ such as RAGAS, Deepeval, Bert Score, BLEU and ROGUE score from evaluate module</
 <dt>Args:</dt><dd><p>input (str): Actual text to be summarized
 output (str): Summarized output from LLM</p>
 </dd>
-<dt>Returns:</dt><dd><p>float: Summarization score</p>
+<dt>Returns:</dt><dd><p>float: Summarization score (0 to 1) (Higher the better)</p>
 </dd>
 </dl>
 </dd></dl>
@@ -124,7 +124,7 @@ Args:</p>
 candidate (str): The model-generated candidate sentence to be evaluated.</p>
 </div></blockquote>
 <dl>
-<dt>Returns:</dt><dd><p>Dict[str, float]: A dictionary containing the BERTScore values for Precision, Recall, and F1.</p>
+<dt>Returns:</dt><dd><p>Dict[str, float]: A dictionary containing the BERTScore values for Precision (0 to 1), Recall (0 to 1), and F1 (0 to 1) (Higher the better).</p>
 <p>Example return value:
 {</p>
 <blockquote>
@@ -153,7 +153,7 @@ references (List[str]): list of lists of reference sentences (since each predict
 have multiple references), reference sentences refer to ground truth</p>
 </div></blockquote>
 <p>Returns:
-Tuple[Dict[str, float], Dict[str, float]]: Two dictionaries containing the BLEU and ROUGE scores, respectively.
+Tuple[Dict[str, float], Dict[str, float]]: Two dictionaries containing the BLEU (0 to 1) and ROUGE (0 to 1) scores, respectively (Higher th better).
 Example output format :
 {‘bleu’: 1.0, ‘precisions’: [1.0, 1.0, 1.0, 1.0], ‘brevity_penalty’: 1.0, ‘length_ratio’: 1.1666666666666667, ‘translation_length’: 7, ‘reference_length’: 6}
 {‘rouge1’: 1.0, ‘rouge2’: 1.0, ‘rougeL’: 1.0, ‘rougeLsum’: 1.0}</p>
@@ -173,8 +173,8 @@ contexts (List[List[str]]): top N contexts retrieved from the vector database by
 </dd>
 <dt>Returns:</dt><dd><dl class="simple">
 <dt>Tuple[float, float]: A tuple containing two float values:</dt><dd><ul class="simple">
-<li><p>The faithfulness score (float).</p></li>
-<li><p>The answer relevancy score (float).</p></li>
+<li><p>The faithfulness score (float) (0 to 1) (Higher the better).</p></li>
+<li><p>The answer relevancy score (float) (0 to 1) (Higher the better).</p></li>
 </ul>
 </dd>
 </dl>
@@ -194,7 +194,7 @@ answers (List[str]): List of final outputs from the RAG pipeline from the LLM.
 contexts (List[List[List[str]]]): List of top N contexts retrieved from the vector database by retriever, for each question.
 ground_truths (List[str]): List of actual ground truth answers for the given questions.</p>
 </dd>
-<dt>Returns:</dt><dd><p>Pandas Dataframe containing, questions, answers and corresponding eval scores</p>
+<dt>Returns:</dt><dd><p>Pandas Dataframe containing, questions, answers and corresponding eval scores (0 to 1) (Higher the better)</p>
 </dd>
 </dl>
 </dd></dl>
@@ -216,8 +216,8 @@ ground_truth (str): Actual answer to the given question from user</p>
 </dd>
 <dt>Returns:</dt><dd><dl class="simple">
 <dt>Tuple[float, float]: A tuple containing two float values:</dt><dd><ul class="simple">
-<li><p>The context_precision score (float).</p></li>
-<li><p>The  context_recall score (float).</p></li>
+<li><p>The context_precision score (float) (0 to 1) (Higher the bettr).</p></li>
+<li><p>The  context_recall score (float) (0 to 1) (Higher the better).</p></li>
 </ul>
 </dd>
 </dl>
@@ -242,9 +242,9 @@ contexts (List[str]): top N contexts retrieved from the vector database by retri
 </div></blockquote>
 <dl class="simple">
 <dt>Returns:</dt><dd><p>Tuple[float, float,float]: A tuple containing three float values:
--Hallucination score
--Bias score
--Toxicity score</p>
+-Hallucination score (0 to 1) (Lower the better)
+-Bias score (0 to 1) (Lower the better)
+-Toxicity score (0 to 1) (Lower the better)</p>
 </dd>
 </dl>
 </dd></dl>
